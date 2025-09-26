@@ -464,7 +464,13 @@ class ChatEmotionAnalyzer {
       '[jscontroller="KF64he"]', // New chatボタンコントローラー
       '[data-is-fab="true"]',    // Floating Action Button
       'button[jsname="TrXBg"]',  // New chatボタン
-      '[role="tooltip"]'         // ツールチップ
+      '[role="tooltip"]',        // ツールチップ
+      '.tVu25',                  // Gmail上部コンテナ
+      '.vI8oZc',                 // Gmail レイアウト要素
+      '.w-asV',                  // Gmail レイアウト要素
+      '.bbg',                    // Gmail レイアウト要素
+      'div[style*="width: 1114px"]', // Gmail固定幅コンテナ
+      'div[style*="top: -10000px"]'  // Gmail隠し要素
     ];
     
     for (const selector of excludeContainers) {
@@ -483,8 +489,10 @@ class ChatEmotionAnalyzer {
     
     // メッセージテキストの確実なクラス名
     const messageTextClasses = [
-      'DTp27d QIJiHb',     // Google Chat メッセージテキスト
-      'DTp27d QIJiHb Zc1Emd'  // 拡張版
+      'DTp27d QIJiHb',           // Google Chat メッセージテキスト
+      'DTp27d QIJiHb Zc1Emd',    // 拡張版
+      'yqoUIf',                   // メッセージ要素
+      'nF6pT'                     // メッセージコンテナ
     ];
     
     const elementClasses = element.className || '';
@@ -507,13 +515,27 @@ class ChatEmotionAnalyzer {
       return true;
     }
     
-    // メッセージ内容らしいテキストがある場合
+    // data-name があるメッセージ要素（ユーザー名付き）
+    if (element.hasAttribute('data-name') && 
+        !elementClasses.includes('nH') &&
+        !elementClasses.includes('tVu25')) {
+      return true;
+    }
+    
+    // メッセージらしいコンテンツの判定を強化
     const textContent = element.textContent?.trim() || '';
-    if (textContent.length > 10 && 
+    if (textContent.length > 5 && 
         textContent.length < 1000 && 
         !this.isSystemMessage(textContent) &&
         !this.isUIElement(textContent) &&
-        element.hasAttribute('data-name')) {
+        // Gmail UI要素のクラスを持たない
+        !elementClasses.includes('nH') &&
+        !elementClasses.includes('tVu25') &&
+        !elementClasses.includes('vI8oZc') &&
+        // メッセージコンテナ内にある
+        (element.closest('[role="main"]') || 
+         element.closest('.nF6pT') || 
+         element.closest('.yqoUIf'))) {
       return true;
     }
     
@@ -547,7 +569,18 @@ class ChatEmotionAnalyzer {
       /^pnsM6e/,      // コンテナ要素
       /^VpAp7d/,      // ツールチップラッパー
       /^ne2Ple/,      // ツールチップ: ne2Ple-oshW8e-V67aGc
-      /^G01np/        // アイコンコンテナ
+      /^G01np/,       // アイコンコンテナ
+      /^tVu25/,       // Gmail上部コンテナ
+      /^vI8oZc/,      // Gmail レイアウト要素
+      /^nH$/,         // Gmail ナビゲーションハンドル（完全一致）
+      /^aeH$/,        // Gmail 要素
+      /^aeF$/,        // Gmail 要素
+      /^aeG$/,        // Gmail 要素
+      /^bGI$/,        // Gmail 要素
+      /^Tm$/,         // Gmail 要素（短いクラス名は完全一致）
+      /^AO$/,         // Gmail 要素
+      /^w-asV$/,      // Gmail 要素
+      /^bbg$/         // Gmail 要素
     ];
     
     const elementClasses = element.className || '';
@@ -567,7 +600,12 @@ class ChatEmotionAnalyzer {
     
     // role属性での判定
     const role = element.getAttribute('role');
-    if (role && ['banner', 'navigation', 'toolbar', 'menubar', 'button'].includes(role)) {
+    if (role && ['banner', 'navigation', 'toolbar', 'menubar', 'button', 'alert', 'contentinfo'].includes(role)) {
+      return true;
+    }
+    
+    // aria-live要素（Gmail通知・ステータス要素）
+    if (element.hasAttribute('aria-live')) {
       return true;
     }
     
@@ -613,6 +651,21 @@ class ChatEmotionAnalyzer {
     
     // data-tooltip-id（ツールチップ関連）
     if (element.hasAttribute('data-tooltip-id')) {
+      return true;
+    }
+    
+    // Gmail特有のID パターン
+    const elementId = element.id || '';
+    if (elementId && /^:[a-z0-9]+$/.test(elementId)) {
+      // Gmail動的ID（:f, :b, :5 等）
+      return true;
+    }
+    
+    // Gmail特有のstyle属性
+    const elementStyle = element.getAttribute('style') || '';
+    if (elementStyle.includes('top: -10000px') || 
+        elementStyle.includes('width: 1114px') ||
+        elementStyle.includes('position: relative') && elementClasses.includes('nH')) {
       return true;
     }
     
