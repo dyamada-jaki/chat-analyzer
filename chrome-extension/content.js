@@ -203,19 +203,38 @@ class ChatEmotionAnalyzer {
               if (node.matches && node.matches(selector) && !this.isButtonElement(node)) {
                 console.log(`💬 新しいメッセージを検出（直接-${selector}）:`, node);
                 this.processMessage(node, `realtime-direct-${selector}`);
-                break;
+                break; // 最初にマッチしたセレクタのみ処理
               }
             }
             
-            // 子要素もチェック（ボタン要素を除外）
-            for (const selector of gmailSelectors) {
+            // 子要素もチェック（ボタン要素を除外、メッセージテキスト要素のみ優先）
+            const prioritySelectors = ['[jsname="bgckF"]', '.DTp27d.QIJiHb'];
+            let foundMessageText = false;
+            
+            for (const selector of prioritySelectors) {
               const messageElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
               messageElements.forEach(msgEl => {
-                if (!this.processedMessages.has(msgEl) && !this.isButtonElement(msgEl)) {
+                if (!this.isButtonElement(msgEl)) {
                   console.log(`💬 子要素から新しいメッセージを検出 (${selector}):`, msgEl);
                   this.processMessage(msgEl, `realtime-child-${selector}`);
+                  foundMessageText = true;
                 }
               });
+              if (foundMessageText) break; // メッセージテキストが見つかったら他のセレクタは処理しない
+            }
+            
+            // メッセージテキストが見つからない場合のみ、他のセレクタを試行
+            if (!foundMessageText) {
+              const fallbackSelectors = gmailSelectors.filter(s => !prioritySelectors.includes(s));
+              for (const selector of fallbackSelectors) {
+                const messageElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
+                messageElements.forEach(msgEl => {
+                  if (!this.isButtonElement(msgEl)) {
+                    console.log(`💬 子要素から新しいメッセージを検出 (${selector}):`, msgEl);
+                    this.processMessage(msgEl, `realtime-child-${selector}`);
+                  }
+                });
+              }
             }
           }
         });
@@ -312,41 +331,80 @@ class ChatEmotionAnalyzer {
 
   // メッセージ処理
   processMessage(messageElement, sourceSelector = 'unknown') {
-    const messageId = messageElement.getAttribute('data-id') || `generated_${Date.now()}_${Math.random()}`;
+    // より確実なユニークID生成
+    const dataId = messageElement.getAttribute('data-id');
+    const messageText = messageElement.textContent?.trim() || '';
+    const uniqueKey = dataId || `${messageText.substring(0, 50)}_${messageElement.tagName}`;
     
     // 既に処理済みの場合はスキップ
-    if (this.processedMessages.has(messageId)) {
+    if (this.processedMessages.has(uniqueKey)) {
+      console.log(`⏭️ 既に処理済みメッセージをスキップ: ${uniqueKey.substring(0, 30)}...`);
       return;
     }
 
     try {
       console.log(`🔍 メッセージ処理開始 (${sourceSelector}):`, {
         tagName: messageElement.tagName,
-        messageId,
+        uniqueKey: uniqueKey.substring(0, 30) + '...',
         classList: Array.from(messageElement.classList).slice(0, 3)
       });
       
       // メッセージ情報を抽出
       const messageData = this.extractMessageData(messageElement);
       
-      if (messageData.content && messageData.userName) {
+      // メッセージの有効性をより厳格にチェック
+      if (this.isValidMessage(messageData)) {
         console.log('💬 メッセージ抽出成功:', messageData);
+        
+        // 処理済みとしてマーク（感情分析前に実行して重複を防ぐ）
+        this.processedMessages.add(uniqueKey);
         
         // バックエンドに感情分析を依頼
         this.analyzeEmotion(messageData, messageElement);
         
-        // 処理済みとしてマーク
-        this.processedMessages.add(messageId);
       } else {
         console.log('⚠️ メッセージ抽出失敗:', {
           hasContent: !!messageData.content,
           hasUserName: !!messageData.userName,
-          contentLength: messageData.content?.length || 0
+          contentLength: messageData.content?.length || 0,
+          isSystemMessage: this.isSystemMessage(messageData.content)
         });
       }
     } catch (error) {
       console.error('❌ メッセージ処理エラー:', error);
     }
+  }
+
+  // メッセージの有効性をチェック
+  isValidMessage(messageData) {
+    return messageData.content && 
+           messageData.content.trim() && 
+           messageData.content.length > 2 && 
+           messageData.userName &&
+           !this.isSystemMessage(messageData.content);
+  }
+
+  // システムメッセージかどうかを判定
+  isSystemMessage(content) {
+    if (!content) return true;
+    
+    const systemPatterns = [
+      /^You$/i,
+      /^今$/,
+      /^\d+\s*(分|時間|秒)$/,
+      /^Now$/i,
+      /^午前|午後/,
+      /^\d{1,2}:\d{2}$/,
+      /^\.\.\.$/,
+      /^読み込み中/,
+      /^Loading/i,
+      /^This is taking longer/i,
+      /^Edit message$/i,
+      /^Reply in thread$/i,
+      /^リアクションを追加$/
+    ];
+    
+    return systemPatterns.some(pattern => pattern.test(content.trim()));
   }
 
   // メッセージデータ抽出
@@ -487,11 +545,12 @@ class ChatEmotionAnalyzer {
   displayEmotionIcon(messageElement, emotion, confidence) {
     console.log(`🎨 感情アイコン表示開始: ${emotion} (${confidence}%)`);
     
-    // 既存のアイコンを削除
-    const existingIcon = messageElement.querySelector('.emotion-analyzer-icon');
-    if (existingIcon) {
-      console.log('🗑️ 既存アイコンを削除');
-      existingIcon.remove();
+    // メッセージ要素の階層全体で既存アイコンをチェック
+    const parentContainer = messageElement.closest('[data-id]') || messageElement;
+    const existingIcons = parentContainer.querySelectorAll('.emotion-analyzer-icon');
+    if (existingIcons.length > 0) {
+      console.log(`🗑️ 既存アイコン ${existingIcons.length}個を削除`);
+      existingIcons.forEach(icon => icon.remove());
     }
 
     // 感情アイコンマッピング（より豊富な絵文字）
@@ -584,33 +643,36 @@ class ChatEmotionAnalyzer {
 
   // 感情アイコンの最適な挿入位置を決定
   insertEmotionIcon(messageElement, iconElement) {
-    // 挿入位置の候補を優先順で試行
-    const insertionTargets = [
-      // Gmail Chat統合版のユーザー名要素
-      '.njhDLd.O5OMdc',
-      // スタンドアロンGoogle Chatのユーザー名要素  
-      '[data-name]',
-      // メッセージコンテナ
-      '.DTp27d.QIJiHb',
-      // フォールバック: メッセージ要素自体
-      null
-    ];
-
-    for (const selector of insertionTargets) {
-      if (selector === null) {
-        // 最後の手段: メッセージ要素の最初に挿入
-        messageElement.insertBefore(iconElement, messageElement.firstChild);
-        console.log('📍 アイコン挿入位置: メッセージ要素の先頭');
-        return;
-      }
-      
-      const targetElement = messageElement.querySelector(selector);
-      if (targetElement && targetElement.parentNode) {
-        targetElement.parentNode.insertBefore(iconElement, targetElement.nextSibling);
-        console.log(`📍 アイコン挿入位置: ${selector} の後`);
-        return;
-      }
+    // メッセージ全体のコンテナを取得
+    const messageContainer = messageElement.closest('[data-id]') || messageElement;
+    
+    // 優先順位1: メッセージテキストの直後
+    const messageTextElement = messageContainer.querySelector('.DTp27d.QIJiHb, [jsname="bgckF"]');
+    if (messageTextElement && messageTextElement.parentNode) {
+      messageTextElement.appendChild(iconElement);
+      console.log('📍 アイコン挿入位置: メッセージテキスト内の末尾');
+      return;
     }
+    
+    // 優先順位2: ユーザー名要素の直後
+    const userNameElement = messageContainer.querySelector('.njhDLd.O5OMdc, [data-name]');
+    if (userNameElement && userNameElement.parentNode) {
+      userNameElement.parentNode.insertBefore(iconElement, userNameElement.nextSibling);
+      console.log('📍 アイコン挿入位置: ユーザー名の後');
+      return;
+    }
+    
+    // 優先順位3: メッセージコンテナの末尾
+    const contentContainer = messageContainer.querySelector('.yqoUIf, .AflJR');
+    if (contentContainer) {
+      contentContainer.appendChild(iconElement);
+      console.log('📍 アイコン挿入位置: コンテンツコンテナの末尾');
+      return;
+    }
+    
+    // フォールバック: メッセージ要素の末尾
+    messageContainer.appendChild(iconElement);
+    console.log('📍 アイコン挿入位置: メッセージコンテナの末尾（フォールバック）');
   }
 
   // フォールバック感情分析
