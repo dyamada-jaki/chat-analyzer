@@ -148,8 +148,8 @@ class ChatEmotionAnalyzer {
           el.textContent?.trim().length > 10 && 
           !el.textContent.includes('window.WIZ_global_data') && 
           !this.isButtonElement(el) &&
-          !this.isGoogleUIElement(el) &&
-          this.isInMessageContainer(el)
+          (this.isDefinitelyMessageElement(el) || 
+           (!this.isGoogleUIElement(el) && this.isInMessageContainer(el)))
         );
         
         console.log(`✅ ${selector}で有効なメッセージ候補: ${validMessages.length}件`);
@@ -190,16 +190,22 @@ class ChatEmotionAnalyzer {
           if (node.nodeType === 1) {
             console.log(`🆕 新しいノード追加: ${node.tagName}, クラス=[${Array.from(node.classList || []).join(', ')}]`);
             
-            // Google UI要素チェック
-            if (this.isGoogleUIElement(node)) {
-              console.log('🚫 Google UI要素を検出して無視:', node.className || node.tagName);
-              return;
-            }
-            
-            // メッセージコンテナ外チェック
-            if (!this.isInMessageContainer(node)) {
-              console.log('🚫 メッセージコンテナ外を検出して無視:', node.className || node.tagName);
-              return;
+            // 確実なメッセージ要素チェック（最優先）
+            if (this.isDefinitelyMessageElement(node)) {
+              console.log('✅ 確実なメッセージ要素を検出:', node.className || node.tagName);
+              // メッセージ要素なので直接処理
+            } else {
+              // Google UI要素チェック
+              if (this.isGoogleUIElement(node)) {
+                console.log('🚫 Google UI要素を検出して無視:', node.className || node.tagName);
+                return;
+              }
+              
+              // メッセージコンテナ外チェック
+              if (!this.isInMessageContainer(node)) {
+                console.log('🚫 メッセージコンテナ外を検出して無視:', node.className || node.tagName);
+                return;
+              }
             }
             
             // Gmail Chat専用セレクタで検索
@@ -212,11 +218,12 @@ class ChatEmotionAnalyzer {
               '[data-id]'
             ];
             
-            // ノード自体をチェック（ボタン要素とGoogle UI要素を除外）
+            // ノード自体をチェック（ボタン要素を除外、メッセージ要素を優先）
             for (const selector of gmailSelectors) {
               if (node.matches && node.matches(selector) && 
                   !this.isButtonElement(node) && 
-                  !this.isGoogleUIElement(node)) {
+                  (this.isDefinitelyMessageElement(node) || 
+                   (!this.isGoogleUIElement(node) && this.isInMessageContainer(node)))) {
                 console.log(`💬 新しいメッセージを検出（直接-${selector}）:`, node);
                 this.processMessage(node, `realtime-direct-${selector}`);
                 break; // 最初にマッチしたセレクタのみ処理
@@ -231,8 +238,8 @@ class ChatEmotionAnalyzer {
               const messageElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
               messageElements.forEach(msgEl => {
                 if (!this.isButtonElement(msgEl) && 
-                    !this.isGoogleUIElement(msgEl) &&
-                    this.isInMessageContainer(msgEl)) {
+                    (this.isDefinitelyMessageElement(msgEl) || 
+                     (!this.isGoogleUIElement(msgEl) && this.isInMessageContainer(msgEl)))) {
                   console.log(`💬 子要素から新しいメッセージを検出 (${selector}):`, msgEl);
                   this.processMessage(msgEl, `realtime-child-${selector}`);
                   foundMessageText = true;
@@ -248,8 +255,8 @@ class ChatEmotionAnalyzer {
                 const messageElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
                 messageElements.forEach(msgEl => {
                   if (!this.isButtonElement(msgEl) && 
-                      !this.isGoogleUIElement(msgEl) &&
-                      this.isInMessageContainer(msgEl)) {
+                      (this.isDefinitelyMessageElement(msgEl) || 
+                       (!this.isGoogleUIElement(msgEl) && this.isInMessageContainer(msgEl)))) {
                     console.log(`💬 子要素から新しいメッセージを検出 (${selector}):`, msgEl);
                     this.processMessage(msgEl, `realtime-child-${selector}`);
                   }
@@ -404,7 +411,13 @@ class ChatEmotionAnalyzer {
 
   // メッセージコンテナ内の要素かチェック
   isInMessageContainer(element) {
-    // 最初に明確に除外すべき要素をチェック
+    // 最初にメッセージ要素かどうかを積極的にチェック
+    if (this.isDefinitelyMessageElement(element)) {
+      console.log('✅ 確実なメッセージ要素を検出:', element.className);
+      return true;
+    }
+    
+    // その後でGoogle UI要素をチェック（メッセージ要素でない場合のみ）
     if (this.isGoogleUIElement(element)) {
       console.log('⚠️ Google UI要素を検出して除外:', element.className);
       return false;
@@ -464,11 +477,59 @@ class ChatEmotionAnalyzer {
     return true;
   }
 
+  // 確実にメッセージ要素かどうかを判定
+  isDefinitelyMessageElement(element) {
+    if (!element) return false;
+    
+    // メッセージテキストの確実なクラス名
+    const messageTextClasses = [
+      'DTp27d QIJiHb',     // Google Chat メッセージテキスト
+      'DTp27d QIJiHb Zc1Emd'  // 拡張版
+    ];
+    
+    const elementClasses = element.className || '';
+    
+    // 完全一致でメッセージテキストクラスをチェック
+    for (const messageClass of messageTextClasses) {
+      if (elementClasses.includes(messageClass)) {
+        return true;
+      }
+    }
+    
+    // jsname="bgckF" でメッセージテキストを確認
+    if (element.getAttribute('jsname') === 'bgckF' && 
+        elementClasses.includes('DTp27d')) {
+      return true;
+    }
+    
+    // data-message-id があるメッセージコンテナ
+    if (element.hasAttribute('data-message-id')) {
+      return true;
+    }
+    
+    // メッセージ内容らしいテキストがある場合
+    const textContent = element.textContent?.trim() || '';
+    if (textContent.length > 10 && 
+        textContent.length < 1000 && 
+        !this.isSystemMessage(textContent) &&
+        !this.isUIElement(textContent) &&
+        element.hasAttribute('data-name')) {
+      return true;
+    }
+    
+    return false;
+  }
+
   // Google UI要素かどうかを判定
   isGoogleUIElement(element) {
     if (!element) return false;
     
-    // Google特有のクラス名パターン
+    // まず、確実にメッセージ要素でないことを確認
+    if (this.isDefinitelyMessageElement(element)) {
+      return false;
+    }
+    
+    // Google特有のクラス名パターン（メッセージ要素と競合しないもののみ）
     const googleClassPatterns = [
       /^gb_/,         // Google Bar: gb_Ha, gb_ub, gb_zd 等
       /^pGxpHc/,      // 外側コンテナ
@@ -491,7 +552,13 @@ class ChatEmotionAnalyzer {
     
     const elementClasses = element.className || '';
     
-    // クラス名での判定
+    // クラス名での判定（ただし、メッセージ関連クラスがある場合は除外しない）
+    if (elementClasses.includes('DTp27d') || 
+        elementClasses.includes('QIJiHb') || 
+        element.getAttribute('jsname') === 'bgckF') {
+      return false; // メッセージ要素の可能性が高い
+    }
+    
     for (const pattern of googleClassPatterns) {
       if (pattern.test(elementClasses)) {
         return true;
@@ -523,8 +590,10 @@ class ChatEmotionAnalyzer {
       }
     }
     
-    // jsaction 属性（Google Event System）
-    if (element.hasAttribute('jsaction')) {
+    // jsaction 属性（Google Event System）- ただしメッセージ要素は除外
+    if (element.hasAttribute('jsaction') && 
+        !elementClasses.includes('DTp27d') && 
+        !elementClasses.includes('QIJiHb')) {
       return true;
     }
     
