@@ -623,8 +623,9 @@ class ChatEmotionAnalyzer {
       <span class="emotion-icon-container" style="
         display: inline-flex;
         align-items: center;
-        margin-left: 8px;
-        padding: 4px 8px;
+        margin-left: 6px;
+        margin-top: 2px;
+        padding: 3px 6px;
         background: linear-gradient(135deg, ${color}15, ${color}25);
         border: 1px solid ${color}40;
         border-radius: 16px;
@@ -674,31 +675,31 @@ class ChatEmotionAnalyzer {
   insertEmotionIcon(messageElement, iconElement) {
     const messageContainer = messageElement.closest('[data-id]') || messageElement;
     
-    // 優先順位1: メッセージテキスト要素内部の末尾（最適解）
+    // 優先順位1: メッセージテキスト要素の直後（DIV外部配置）
     const messageTextElement = messageContainer.querySelector('.DTp27d.QIJiHb, [jsname="bgckF"]');
     if (messageTextElement) {
-      // メッセージテキストDIV内部の末尾に挿入（隠しspanの前）
-      const hiddenSpan = messageTextElement.querySelector('span[style*="display: none"]');
-      if (hiddenSpan) {
-        // 隠しspanの前に挿入
-        messageTextElement.insertBefore(iconElement, hiddenSpan);
-        console.log('📍 アイコン挿入位置: メッセージテキスト内部、隠しspan前（完璧なインライン）');
-      } else {
-        // 隠しspanがない場合は内部末尾に挿入
-        messageTextElement.appendChild(iconElement);
-        console.log('📍 アイコン挿入位置: メッセージテキスト内部末尾（完璧なインライン）');
-      }
-      return;
-    }
-    
-    // 優先順位2: メッセージテキスト要素の直後
-    if (messageTextElement) {
       messageTextElement.insertAdjacentElement('afterend', iconElement);
-      console.log('📍 アイコン挿入位置: メッセージテキストの直後');
+      console.log('📍 アイコン挿入位置: メッセージテキストDIVの直後（リンク干渉回避）');
       return;
     }
     
-    // 優先順位3: メッセージ全体のテキストノードの直後
+    // 優先順位2: ユーザー名要素の直後
+    const userNameElement = messageContainer.querySelector('.njhDLd.O5OMdc, [data-name]');
+    if (userNameElement && userNameElement.parentNode) {
+      userNameElement.parentNode.insertBefore(iconElement, userNameElement.nextSibling);
+      console.log('📍 アイコン挿入位置: ユーザー名の直後');
+      return;
+    }
+    
+    // 優先順位3: コンテンツコンテナ内の末尾
+    const contentContainer = messageContainer.querySelector('.yqoUIf, .AflJR');
+    if (contentContainer) {
+      contentContainer.appendChild(iconElement);
+      console.log('📍 アイコン挿入位置: コンテンツコンテナの末尾');
+      return;
+    }
+    
+    // 優先順位4: メッセージ全体のテキストノードの直後
     const textNodes = Array.from(messageContainer.childNodes).filter(node => 
       node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5
     );
