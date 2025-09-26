@@ -145,9 +145,11 @@ class ChatEmotionAnalyzer {
         // SCRIPTタグ以外の要素を処理
         const validMessages = Array.from(messages).filter(el => 
           el.tagName !== 'SCRIPT' && 
-          el.textContent?.trim().length > 10 &&
-          !el.textContent.includes('window.WIZ_global_data') &&
-          !this.isButtonElement(el)
+          el.textContent?.trim().length > 10 && 
+          !el.textContent.includes('window.WIZ_global_data') && 
+          !this.isButtonElement(el) &&
+          !this.isGoogleUIElement(el) &&
+          this.isInMessageContainer(el)
         );
         
         console.log(`✅ ${selector}で有効なメッセージ候補: ${validMessages.length}件`);
@@ -188,6 +190,18 @@ class ChatEmotionAnalyzer {
           if (node.nodeType === 1) {
             console.log(`🆕 新しいノード追加: ${node.tagName}, クラス=[${Array.from(node.classList || []).join(', ')}]`);
             
+            // Google UI要素チェック
+            if (this.isGoogleUIElement(node)) {
+              console.log('🚫 Google UI要素を検出して無視:', node.className || node.tagName);
+              return;
+            }
+            
+            // メッセージコンテナ外チェック
+            if (!this.isInMessageContainer(node)) {
+              console.log('🚫 メッセージコンテナ外を検出して無視:', node.className || node.tagName);
+              return;
+            }
+            
             // Gmail Chat専用セレクタで検索
             const gmailSelectors = [
               '[data-message-id]',
@@ -198,23 +212,27 @@ class ChatEmotionAnalyzer {
               '[data-id]'
             ];
             
-            // ノード自体をチェック（ボタン要素を除外）
+            // ノード自体をチェック（ボタン要素とGoogle UI要素を除外）
             for (const selector of gmailSelectors) {
-              if (node.matches && node.matches(selector) && !this.isButtonElement(node)) {
+              if (node.matches && node.matches(selector) && 
+                  !this.isButtonElement(node) && 
+                  !this.isGoogleUIElement(node)) {
                 console.log(`💬 新しいメッセージを検出（直接-${selector}）:`, node);
                 this.processMessage(node, `realtime-direct-${selector}`);
                 break; // 最初にマッチしたセレクタのみ処理
               }
             }
             
-            // 子要素もチェック（ボタン要素を除外、メッセージテキスト要素のみ優先）
+            // 子要素もチェック（ボタン要素とGoogle UI要素を除外、メッセージテキスト要素のみ優先）
             const prioritySelectors = ['[jsname="bgckF"]', '.DTp27d.QIJiHb'];
             let foundMessageText = false;
             
             for (const selector of prioritySelectors) {
               const messageElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
               messageElements.forEach(msgEl => {
-                if (!this.isButtonElement(msgEl)) {
+                if (!this.isButtonElement(msgEl) && 
+                    !this.isGoogleUIElement(msgEl) &&
+                    this.isInMessageContainer(msgEl)) {
                   console.log(`💬 子要素から新しいメッセージを検出 (${selector}):`, msgEl);
                   this.processMessage(msgEl, `realtime-child-${selector}`);
                   foundMessageText = true;
@@ -229,7 +247,9 @@ class ChatEmotionAnalyzer {
               for (const selector of fallbackSelectors) {
                 const messageElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
                 messageElements.forEach(msgEl => {
-                  if (!this.isButtonElement(msgEl)) {
+                  if (!this.isButtonElement(msgEl) && 
+                      !this.isGoogleUIElement(msgEl) &&
+                      this.isInMessageContainer(msgEl)) {
                     console.log(`💬 子要素から新しいメッセージを検出 (${selector}):`, msgEl);
                     this.processMessage(msgEl, `realtime-child-${selector}`);
                   }
@@ -384,6 +404,12 @@ class ChatEmotionAnalyzer {
 
   // メッセージコンテナ内の要素かチェック
   isInMessageContainer(element) {
+    // 最初に明確に除外すべき要素をチェック
+    if (this.isGoogleUIElement(element)) {
+      console.log('⚠️ Google UI要素を検出して除外:', element.className);
+      return false;
+    }
+    
     // チャットメッセージエリアを示すセレクタ
     const messageContainerSelectors = [
       '[role="main"]',           // メインコンテンツエリア
@@ -408,24 +434,76 @@ class ChatEmotionAnalyzer {
       return false;
     }
     
-    // ナビゲーション・ヘッダー要素を除外
+    // ナビゲーション・ヘッダー要素を除外（強化版）
     const excludeContainers = [
+      'header[role="banner"]',   // ヘッダー（明示的）
       '[role="banner"]',         // ヘッダー
       '[role="navigation"]',     // ナビゲーション
+      '[role="toolbar"]',        // ツールバー
+      '[role="menubar"]',        // メニューバー
       '.gb_pc',                  // Googleバー
       '.nH',                     // Gmailヘッダー
       '[data-action-button]',    // アクションボタン
       '.Z0LcW',                  // サイドバー
-      '[role="complementary"]'   // 補助コンテンツ
+      '[role="complementary"]',  // 補助コンテンツ
+      '#gb',                     // Google Bar ID
+      '.pGxpHc'                  // 外側コンテナ
     ];
     
     for (const selector of excludeContainers) {
       if (element.closest(selector)) {
+        console.log(`🚫 除外対象コンテナを検出 (${selector}):`, element);
         return false;
       }
     }
     
     return true;
+  }
+
+  // Google UI要素かどうかを判定
+  isGoogleUIElement(element) {
+    if (!element) return false;
+    
+    // Google特有のクラス名パターン
+    const googleClassPatterns = [
+      /^gb_/,         // Google Bar: gb_Ha, gb_ub, gb_zd 等
+      /^pGxpHc/,      // 外側コンテナ
+      /^QhgNnf/,      // メニュー項目
+      /^bMWlzf/,      // ボタン要素
+      /^pYTkkf/,      // 設定ボタン
+      /^Ewn2Sd/,      // Support ボタン
+      /^lJradf/,      // ステータス要素
+      /^gstl_/,       // 検索関連
+      /^gsib_/,       // 検索ボックス
+      /^RBHQF/        // その他のGoogle UI
+    ];
+    
+    const elementClasses = element.className || '';
+    
+    // クラス名での判定
+    for (const pattern of googleClassPatterns) {
+      if (pattern.test(elementClasses)) {
+        return true;
+      }
+    }
+    
+    // role属性での判定
+    const role = element.getAttribute('role');
+    if (role && ['banner', 'navigation', 'toolbar', 'menubar', 'button'].includes(role)) {
+      return true;
+    }
+    
+    // ng-non-bindable 属性（Angular関連のGoogle UI）
+    if (element.hasAttribute('ng-non-bindable')) {
+      return true;
+    }
+    
+    // header タグで id="gb" の場合
+    if (element.tagName === 'HEADER' && element.id === 'gb') {
+      return true;
+    }
+    
+    return false;
   }
 
   // メッセージの有効性をチェック
