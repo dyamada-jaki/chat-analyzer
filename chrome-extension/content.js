@@ -674,19 +674,27 @@ class ChatEmotionAnalyzer {
   insertEmotionIcon(messageElement, iconElement) {
     const messageContainer = messageElement.closest('[data-id]') || messageElement;
     
-    // 優先順位1: メッセージテキスト要素の直後にインライン挿入
+    // 優先順位1: メッセージテキスト要素内部の末尾（最適解）
     const messageTextElement = messageContainer.querySelector('.DTp27d.QIJiHb, [jsname="bgckF"]');
     if (messageTextElement) {
-      // テキスト要素の直後にスペースを挟まずに挿入
-      messageTextElement.insertAdjacentElement('afterend', iconElement);
-      console.log('📍 アイコン挿入位置: メッセージテキストの直後（インライン）');
+      // メッセージテキストDIV内部の末尾に挿入（隠しspanの前）
+      const hiddenSpan = messageTextElement.querySelector('span[style*="display: none"]');
+      if (hiddenSpan) {
+        // 隠しspanの前に挿入
+        messageTextElement.insertBefore(iconElement, hiddenSpan);
+        console.log('📍 アイコン挿入位置: メッセージテキスト内部、隠しspan前（完璧なインライン）');
+      } else {
+        // 隠しspanがない場合は内部末尾に挿入
+        messageTextElement.appendChild(iconElement);
+        console.log('📍 アイコン挿入位置: メッセージテキスト内部末尾（完璧なインライン）');
+      }
       return;
     }
     
-    // 優先順位2: メッセージテキスト内部の末尾
-    if (messageTextElement && messageTextElement.parentNode) {
-      messageTextElement.appendChild(iconElement);
-      console.log('📍 アイコン挿入位置: メッセージテキスト内の末尾');
+    // 優先順位2: メッセージテキスト要素の直後
+    if (messageTextElement) {
+      messageTextElement.insertAdjacentElement('afterend', iconElement);
+      console.log('📍 アイコン挿入位置: メッセージテキストの直後');
       return;
     }
     
