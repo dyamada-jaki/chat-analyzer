@@ -1,106 +1,75 @@
-// Google Chat Emotion Analyzer - Popup Script
+// Popup script for Chat Emotion Analyzer
 
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🔧 Popup初期化中...');
-  
-  // 要素の取得
-  const statusDot = document.getElementById('status-dot');
-  const statusText = document.getElementById('status-text');
-  const messageCount = document.getElementById('message-count');
-  const backendStatus = document.getElementById('backend-status');
-  const refreshBtn = document.getElementById('refresh-btn');
-  const clearBtn = document.getElementById('clear-btn');
-  const debugBtn = document.getElementById('debug-btn');
-  const reanalyzeBtn = document.getElementById('reanalyze-btn');
-  
-  const positiveCount = document.getElementById('positive-count');
-  const negativeCount = document.getElementById('negative-count');
-  const angryCount = document.getElementById('angry-count');
-  const neutralCount = document.getElementById('neutral-count');
-
-  // 初期化
+  // ポップアップ読み込み時に状態を更新
   updateStatus();
-  
-  // イベントリスナー
-  refreshBtn.addEventListener('click', updateStatus);
-  clearBtn.addEventListener('click', clearData);
-  debugBtn.addEventListener('click', runDebug);
-  reanalyzeBtn.addEventListener('click', forceReanalyze);
 
   // ステータス更新
   async function updateStatus() {
     try {
-      // アクティブタブを取得
+      // 現在のタブ取得
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      // Google Chat URLの詳細チェック
+      // Google Chatページかどうかを確認
       const isGoogleChat = tab.url.includes('chat.google.com') || 
                           tab.url.includes('mail.google.com/chat') ||
                           tab.url.includes('google.com/chat');
       
-      console.log('🔍 URL確認:', tab.url);
-      console.log('🎯 Google Chat判定:', isGoogleChat);
+      const statusElement = document.getElementById('status');
+      const connectionElement = document.getElementById('connection-status');
       
-      if (!isGoogleChat) {
-        updateUI({
-          isActive: false,
-          statusText: `Google Chatではありません (${tab.url})`,
-          messageCount: 0,
-          backendConnected: false,
-          emotions: {}
-        });
-        return;
-      }
-
-      // Content scriptからデータを取得
-      const response = await chrome.tabs.sendMessage(tab.id, { action: 'getStats' });
-      
-      if (response) {
-        updateUI({
-          isActive: true,
-          statusText: '正常に動作中',
-          messageCount: response.messageCount || 0,
-          backendConnected: response.backendConnected || false,
-          emotions: response.emotions || {}
-        });
+      if (isGoogleChat) {
+        statusElement.textContent = '正常に動作中';
+        statusElement.className = 'status working';
+        
+        // Content scriptからの統計情報を取得
+        try {
+          const response = await chrome.tabs.sendMessage(tab.id, { action: 'getStats' });
+          
+          // メッセージ数を更新
+          document.getElementById('message-count').textContent = response.messageCount || 0;
+          
+          // 感情カウントを更新
+          document.getElementById('positive-count').textContent = response.emotions?.positive || 0;
+          document.getElementById('negative-count').textContent = response.emotions?.negative || 0;
+          document.getElementById('angry-count').textContent = response.emotions?.angry || 0;
+          document.getElementById('neutral-count').textContent = response.emotions?.neutral || 0;
+          
+          // バックエンド接続状況を更新
+          if (response.backendConnected) {
+            connectionElement.textContent = 'バックエンドに接続済み';
+            connectionElement.className = 'connection connected';
+          } else {
+            connectionElement.textContent = 'バックエンド未接続（ローカル分析使用）';
+            connectionElement.className = 'connection disconnected';
+          }
+          
+        } catch (error) {
+          console.log('Content scriptと通信できません:', error);
+          connectionElement.textContent = 'Content script未読み込み';
+          connectionElement.className = 'connection disconnected';
+        }
+        
       } else {
-        updateUI({
-          isActive: false,
-          statusText: 'Content scriptが見つかりません',
-          messageCount: 0,
-          backendConnected: false,
-          emotions: {}
-        });
+        statusElement.textContent = 'Google Chatではありません';
+        statusElement.className = 'status not-chat';
+        connectionElement.textContent = '対象外のページ';
+        connectionElement.className = 'connection disconnected';
+        
+        // 実際のURLを表示
+        if (tab.url) {
+          statusElement.textContent = `対象外: ${new URL(tab.url).hostname}`;
+        }
       }
+      
     } catch (error) {
       console.error('ステータス更新エラー:', error);
-      updateUI({
-        isActive: false,
-        statusText: 'エラーが発生しました',
-        messageCount: 0,
-        backendConnected: false,
-        emotions: {}
-      });
+      document.getElementById('status').textContent = 'エラーが発生しました';
+      document.getElementById('status').className = 'status error';
     }
   }
 
-  // UI更新
-  function updateUI(data) {
-    // ステータス表示
-    statusDot.className = `status-dot ${data.isActive ? 'active' : 'inactive'}`;
-    statusText.textContent = data.statusText;
-    messageCount.textContent = data.messageCount;
-    backendStatus.textContent = data.backendConnected ? '接続済み' : '未接続';
-
-    // 感情統計
-    const emotions = data.emotions;
-    positiveCount.textContent = emotions.positive || 0;
-    negativeCount.textContent = emotions.negative || 0;
-    angryCount.textContent = emotions.angry || 0;
-    neutralCount.textContent = emotions.neutral || 0;
-  }
-
-  // データクリア
+  // データをクリア
   async function clearData() {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -111,136 +80,15 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (isGoogleChat) {
         await chrome.tabs.sendMessage(tab.id, { action: 'clearData' });
-        setTimeout(updateStatus, 500); // 少し待ってから更新
+        setTimeout(updateStatus, 500); // 0.5秒後に更新
+        console.log('✅ データをクリアしました。');
       }
     } catch (error) {
       console.error('データクリアエラー:', error);
     }
   }
 
-  // 詳細デバッグ実行
-  async function runDebug() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const isGoogleChat = tab.url.includes('chat.google.com') || 
-                          tab.url.includes('mail.google.com/chat') ||
-                          tab.url.includes('google.com/chat');
-      
-      if (isGoogleChat) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'runDebug' });
-        console.log('✅ 詳細デバッグを実行しました。Consoleを確認してください。');
-      }
-    } catch (error) {
-      console.error('デバッグ実行エラー:', error);
-    }
-  }
-
-  // 強制再分析実行
-  async function forceReanalyze() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const isGoogleChat = tab.url.includes('chat.google.com') || 
-                          tab.url.includes('mail.google.com/chat') ||
-                          tab.url.includes('google.com/chat');
-      
-      if (isGoogleChat) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'forceReanalyze' });
-        setTimeout(updateStatus, 1000); // 1秒後に更新
-        console.log('✅ 強制再分析を実行しました。');
-      }
-    } catch (error) {
-      console.error('再分析実行エラー:', error);
-    }
-  }
-
-  // メッセージ検索（新機能）
-  async function findMessages() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const isGoogleChat = tab.url.includes('chat.google.com') || 
-                          tab.url.includes('mail.google.com/chat') ||
-                          tab.url.includes('google.com/chat');
-      
-      if (isGoogleChat) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'findMessages' });
-        console.log('✅ メッセージ要素検索を実行しました。コンソールを確認してください。');
-      }
-    } catch (error) {
-      console.error('メッセージ検索エラー:', error);
-    }
-  }
-
-  // MutationObserverテスト（新機能）
-  async function testMutationObserver() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const isGoogleChat = tab.url.includes('chat.google.com') || 
-                          tab.url.includes('mail.google.com/chat') ||
-                          tab.url.includes('google.com/chat');
-      
-      if (isGoogleChat) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'testMutationObserver' });
-        console.log('✅ MutationObserverテストを実行しました。');
-      }
-    } catch (error) {
-      console.error('MutationObserverテストエラー:', error);
-    }
-  }
-
-  // 現在DOM分析（新機能）
-  async function currentDOMAnalysis() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const isGoogleChat = tab.url.includes('chat.google.com') || 
-                          tab.url.includes('mail.google.com/chat') ||
-                          tab.url.includes('google.com/chat');
-      
-      if (isGoogleChat) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'currentDOMAnalysis' });
-        console.log('✅ 現在のDOM分析を開始しました。コンソールを確認してください。');
-      }
-    } catch (error) {
-      console.error('現在DOM分析エラー:', error);
-    }
-  }
-
-  // メッセージ検出テスト（新機能）
-  async function messageDetectionTest() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const isGoogleChat = tab.url.includes('chat.google.com') || 
-                          tab.url.includes('mail.google.com/chat') ||
-                          tab.url.includes('google.com/chat');
-      
-      if (isGoogleChat) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'messageDetectionTest' });
-        console.log('✅ メッセージ検出テストを開始しました。コンソールを確認してください。');
-      }
-    } catch (error) {
-      console.error('メッセージ検出テストエラー:', error);
-    }
-  }
-
-  // イベントリスナーの設定
-  document.getElementById('refresh-btn').addEventListener('click', updateStatus);
-  document.getElementById('clear-btn').addEventListener('click', clearData);
-  document.getElementById('debug-btn').addEventListener('click', runDebug);
-  document.getElementById('reanalyze-btn').addEventListener('click', forceReanalyze);
-  document.getElementById('find-messages-btn').addEventListener('click', findMessages);
-  document.getElementById('test-mutation-btn').addEventListener('click', testMutationObserver);
-  document.getElementById('debug-all-changes-btn').addEventListener('click', debugAllChanges);
-  document.getElementById('investigate-structure-btn').addEventListener('click', investigateStructure);
-  document.getElementById('current-dom-analysis-btn').addEventListener('click', currentDOMAnalysis);
-  document.getElementById('message-detection-test-btn').addEventListener('click', messageDetectionTest);
-  document.getElementById('process-existing-messages-btn').addEventListener('click', processExistingMessages);
-
-  // 既存メッセージ再処理（新機能）
+  // 既存メッセージ再処理
   async function processExistingMessages() {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -251,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (isGoogleChat) {
         await chrome.tabs.sendMessage(tab.id, { action: 'processExistingMessages' });
+        setTimeout(updateStatus, 1000); // 1秒後に更新
         console.log('✅ 既存メッセージの再処理を開始しました。コンソールを確認してください。');
       }
     } catch (error) {
@@ -258,42 +107,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 構造調査（新機能）
-  async function investigateStructure() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const isGoogleChat = tab.url.includes('chat.google.com') || 
-                          tab.url.includes('mail.google.com/chat') ||
-                          tab.url.includes('google.com/chat');
-      
-      if (isGoogleChat) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'investigateStructure' });
-        console.log('✅ 構造調査を実行しました。Shadow DOM、iframe、仮想DOM構造を調査中...');
-      }
-    } catch (error) {
-      console.error('構造調査エラー:', error);
-    }
-  }
+  // イベントリスナーの設定
+  document.getElementById('refresh-btn').addEventListener('click', updateStatus);
+  document.getElementById('clear-btn').addEventListener('click', clearData);
+  document.getElementById('process-existing-messages-btn').addEventListener('click', processExistingMessages);
 
-  // 全DOM変更監視（新機能）
-  async function debugAllChanges() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const isGoogleChat = tab.url.includes('chat.google.com') || 
-                          tab.url.includes('mail.google.com/chat') ||
-                          tab.url.includes('google.com/chat');
-      
-      if (isGoogleChat) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'debugAllChanges' });
-        console.log('✅ 全DOM変更監視を開始しました。メッセージを送信してください。');
-      }
-    } catch (error) {
-      console.error('全DOM変更監視エラー:', error);
-    }
-  }
-
-  // 定期的にステータスを更新
-  setInterval(updateStatus, 5000);
+  // 初期状態更新
+  updateStatus();
 });
