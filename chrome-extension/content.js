@@ -1487,6 +1487,114 @@ window.investigateStructure = () => {
   console.log('💡 結論: Shadow DOM、iframe、または動的読み込みの可能性を調査してください。');
 };
 
+// 現在DOM分析（新機能）
+window.currentDOMAnalysis = () => {
+  console.log('🔍 現在のDOM分析を開始...');
+  
+  // 現在のページのURL確認
+  console.log('📍 現在のURL:', window.location.href);
+  console.log('📍 ドメイン:', window.location.hostname);
+  console.log('📍 パス:', window.location.pathname);
+  
+  // 基本的なメッセージセレクタで要素数をカウント
+  const selectors = [
+    '[data-message-id]',
+    '[data-name]',
+    '[jsname="bgckF"]',
+    '.DTp27d.QIJiHb',
+    '.DTp27d',
+    '.QIJiHb',
+    '.yqoUIf',
+    '.nF6pT',
+    '[role="main"]'
+  ];
+  
+  console.log('📊 現在のDOM要素数:');
+  selectors.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    console.log(`  ${selector}: ${elements.length}件`);
+    
+    if (elements.length > 0 && elements.length <= 10) {
+      Array.from(elements).forEach((el, i) => {
+        console.log(`    [${i}] 要素:`, {
+          tagName: el.tagName,
+          className: el.className,
+          textContent: el.textContent?.slice(0, 50),
+          attributes: Array.from(el.attributes || []).map(attr => `${attr.name}="${attr.value}"`).slice(0, 3)
+        });
+      });
+    }
+  });
+  
+  // ChatEmotionAnalyzer の状態確認
+  if (window.chatEmotionAnalyzer) {
+    const stats = window.chatEmotionAnalyzer.showStats();
+    console.log('🤖 ChatEmotionAnalyzer状態:', stats);
+    console.log('🔗 MutationObserver状態:', typeof window.chatEmotionAnalyzer.observer);
+  } else {
+    console.log('❌ ChatEmotionAnalyzer未初期化');
+  }
+  
+  console.log('✅ 現在DOM分析完了');
+};
+
+// メッセージ検出テスト（新機能）
+window.messageDetectionTest = () => {
+  console.log('🎯 メッセージ検出テストを開始...');
+  
+  if (!window.chatEmotionAnalyzer) {
+    console.log('❌ ChatEmotionAnalyzer未初期化');
+    return;
+  }
+  
+  // 現在のメッセージ要素を全て取得してテスト
+  const allSelectors = [
+    '[data-message-id]',
+    '[data-name]',
+    '[jsname="bgckF"]',
+    '.DTp27d.QIJiHb',
+    '.DTp27d',
+    '.yqoUIf',
+    '.nF6pT'
+  ];
+  
+  let totalElements = 0;
+  let definiteMessages = 0;
+  let googleUIElements = 0;
+  let inContainer = 0;
+  
+  allSelectors.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    console.log(`\n🔍 ${selector} テスト (${elements.length}件):`);
+    
+    Array.from(elements).forEach((el, i) => {
+      totalElements++;
+      
+      const isDefinitely = window.chatEmotionAnalyzer.isDefinitelyMessageElement(el);
+      const isGoogleUI = window.chatEmotionAnalyzer.isGoogleUIElement(el);
+      const isInContainer = window.chatEmotionAnalyzer.isInMessageContainer(el);
+      
+      if (isDefinitely) definiteMessages++;
+      if (isGoogleUI) googleUIElements++;
+      if (isInContainer) inContainer++;
+      
+      console.log(`  [${i}] ${el.tagName}.${el.className?.slice(0, 20)}:`);
+      console.log(`    📝 テキスト: "${el.textContent?.slice(0, 30)}"`);
+      console.log(`    ✅ 確実メッセージ: ${isDefinitely}`);
+      console.log(`    🚫 Google UI: ${isGoogleUI}`);
+      console.log(`    📦 コンテナ内: ${isInContainer}`);
+    });
+  });
+  
+  console.log('\n📊 検出サマリー:');
+  console.log(`  🔢 総要素数: ${totalElements}`);
+  console.log(`  ✅ 確実メッセージ: ${definiteMessages}`);
+  console.log(`  🚫 Google UI: ${googleUIElements}`);
+  console.log(`  📦 コンテナ内: ${inContainer}`);
+  
+  console.log('✅ メッセージ検出テスト完了');
+};
+
 // Chrome extension メッセージリスナー
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('📨 Content scriptがメッセージを受信:', request);
@@ -1525,6 +1633,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   } else if (request.action === 'investigateStructure') {
     window.investigateStructure();
+    sendResponse({ success: true });
+  } else if (request.action === 'currentDOMAnalysis') {
+    window.currentDOMAnalysis();
+    sendResponse({ success: true });
+  } else if (request.action === 'messageDetectionTest') {
+    window.messageDetectionTest();
     sendResponse({ success: true });
   } else if (request.action === 'ping') {
     sendResponse({ pong: true });
