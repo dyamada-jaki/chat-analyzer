@@ -620,40 +620,38 @@ class ChatEmotionAnalyzer {
     iconElement.className = 'emotion-analyzer-icon';
     
     iconElement.innerHTML = `
-      <div class="emotion-icon-container" style="
+      <span class="emotion-icon-container" style="
         display: inline-flex;
         align-items: center;
-        margin-left: 6px;
-        padding: 2px 6px;
+        margin-left: 8px;
+        padding: 4px 8px;
         background: linear-gradient(135deg, ${color}15, ${color}25);
         border: 1px solid ${color}40;
-        border-radius: 12px;
-        font-size: 12px;
+        border-radius: 16px;
+        font-size: 14px;
         color: ${color};
         font-weight: 600;
         cursor: help;
         opacity: ${opacity};
         transition: opacity 0.2s ease;
         backdrop-filter: blur(4px);
-        box-shadow: 0 1px 2px ${color}20;
-        vertical-align: middle;
-        line-height: 1;
+        box-shadow: 0 2px 4px ${color}20, 0 1px 2px ${color}10;
+        vertical-align: top;
+        white-space: nowrap;
       " title="感情分析: ${label} (確信度: ${confidence}%)">
         <span class="emotion-emoji" style="
-          margin-right: 3px;
-          font-size: 14px;
-          line-height: 1;
+          margin-right: 4px;
+          font-size: 16px;
           vertical-align: middle;
         ">${icon}</span>
         <span class="emotion-confidence" style="
-          font-size: 9px;
+          font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.5px;
           opacity: 0.8;
-          line-height: 1;
           vertical-align: middle;
         ">${confidence}%</span>
-      </div>
+      </span>
     `;
 
     const container = iconElement.querySelector('.emotion-icon-container');
@@ -676,27 +674,34 @@ class ChatEmotionAnalyzer {
   insertEmotionIcon(messageElement, iconElement) {
     const messageContainer = messageElement.closest('[data-id]') || messageElement;
     
+    // 優先順位1: メッセージテキスト要素の直後にインライン挿入
     const messageTextElement = messageContainer.querySelector('.DTp27d.QIJiHb, [jsname="bgckF"]');
+    if (messageTextElement) {
+      // テキスト要素の直後にスペースを挟まずに挿入
+      messageTextElement.insertAdjacentElement('afterend', iconElement);
+      console.log('📍 アイコン挿入位置: メッセージテキストの直後（インライン）');
+      return;
+    }
+    
+    // 優先順位2: メッセージテキスト内部の末尾
     if (messageTextElement && messageTextElement.parentNode) {
       messageTextElement.appendChild(iconElement);
       console.log('📍 アイコン挿入位置: メッセージテキスト内の末尾');
       return;
     }
     
-    const userNameElement = messageContainer.querySelector('.njhDLd.O5OMdc, [data-name]');
-    if (userNameElement && userNameElement.parentNode) {
-      userNameElement.parentNode.insertBefore(iconElement, userNameElement.nextSibling);
-      console.log('📍 アイコン挿入位置: ユーザー名の後');
+    // 優先順位3: メッセージ全体のテキストノードの直後
+    const textNodes = Array.from(messageContainer.childNodes).filter(node => 
+      node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5
+    );
+    if (textNodes.length > 0) {
+      const lastTextNode = textNodes[textNodes.length - 1];
+      lastTextNode.parentNode.insertBefore(iconElement, lastTextNode.nextSibling);
+      console.log('📍 アイコン挿入位置: テキストノードの直後');
       return;
     }
     
-    const contentContainer = messageContainer.querySelector('.yqoUIf, .AflJR');
-    if (contentContainer) {
-      contentContainer.appendChild(iconElement);
-      console.log('📍 アイコン挿入位置: コンテンツコンテナの末尾');
-      return;
-    }
-    
+    // フォールバック: メッセージコンテナの末尾
     messageContainer.appendChild(iconElement);
     console.log('📍 アイコン挿入位置: メッセージコンテナの末尾（フォールバック）');
   }

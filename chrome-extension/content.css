@@ -3,13 +3,18 @@
 .emotion-analyzer-icon {
   display: inline;
   z-index: 10000;
-  vertical-align: middle;
-  line-height: 1;
+  vertical-align: baseline;
+  line-height: 0;
+  margin: 0;
+  padding: 0;
 }
 
 /* 感情アイコンコンテナの詳細スタイル */
 .emotion-icon-container {
   position: relative;
+  display: inline-flex !important;
+  vertical-align: baseline;
+  line-height: normal;
 }
 
 /* 感情分析ステータス表示 */
