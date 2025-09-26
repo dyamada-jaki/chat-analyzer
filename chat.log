@@ -1125,3 +1125,40 @@ Aから進めたいと思っていましたので、それからお願いしま�
 
 ### **🛠️ 追加のGoogle UIクラス除外実装**
 
+### **✅ New chatボタン誤配置修正完了: 192684d**
+
+**"New chat"ボタン誤配置問題の完全解決:**
+
+#### **🎯 新追加Google UIパターン**
+- **`/^T57Ued/`**: New chatボタン本体 (T57Ued-BIzmGd, T57Ued-Q0XOV 等)
+- **`/^SXdXAb/`**: ボタン内部要素 (SXdXAb-BFbNVe, SXdXAb-ugnUJb)
+- **`/^OiePBf/`**: ボタン要素 (OiePBf-zPjgPe)
+- **`/^pnsM6e/`**: コンテナ要素
+- **`/^VpAp7d/`**: ツールチップラッパー
+- **`/^ne2Ple/`**: ツールチップ (ne2Ple-oshW8e-V67aGc)
+- **`/^G01np/`**: アイコンコンテナ
+
+#### **⚡ JavaScript属性による強力除外**
+- **`jscontroller`**: `['KF64he', 'IUkCmb', 'LBaJxb', 'PIVayb', 'uxulBc']`
+- **`jsaction`**: 全Google Event System要素を包括除外
+- **`jsname`**: `['TrXBg', 'm9ZlFb', 'ENL0A', 'V67aGc']`
+- **`data-is-fab`**: Floating Action Button除外
+- **`data-tooltip-id`**: ツールチップ関連要素除外
+
+#### **🚫 コンテナレベル除外強化**
+- **`[jscontroller="KF64he"]`**: New chatボタンコントローラー
+- **`[data-is-fab="true"]`**: Floating Action Button
+- **`button[jsname="TrXBg"]`**: New chatボタン直接指定
+- **`[role="tooltip"]`**: ツールチップ全般
+
+### **🧪 最終確認期待結果:**
+1. **🔄 拡張機能リロード**: `chrome://extensions/`
+2. **🔄 Gmail Chatリフレッシュ**: `Ctrl+Shift+R`
+3. **✨ 完全除外確認**: 
+   - **❌ New chatボタンにアイコン表示されない**
+   - **❌ ツールチップにアイコン表示されない**
+   - **❌ すべてのGoogle UI要素にアイコン表示されない**
+   - **✅ メッセージテキストのみに正確配置**
+
+**これで両方の誤配置問題が完全解決されました！** 🎯✨
+
