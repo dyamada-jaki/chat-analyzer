@@ -616,7 +616,7 @@ class ChatEmotionAnalyzer {
 
     const opacity = Math.max(0.6, confidence / 100);
     
-    const iconElement = document.createElement('div');
+    const iconElement = document.createElement('span');
     iconElement.className = 'emotion-analyzer-icon';
     
     iconElement.innerHTML = `
@@ -636,20 +636,20 @@ class ChatEmotionAnalyzer {
         transition: opacity 0.2s ease;
         backdrop-filter: blur(4px);
         box-shadow: 0 2px 4px ${color}20, 0 1px 2px ${color}10;
-        vertical-align: top;
+        vertical-align: baseline;
         white-space: nowrap;
       " title="感情分析: ${label} (確信度: ${confidence}%)">
         <span class="emotion-emoji" style="
           margin-right: 4px;
           font-size: 16px;
-          vertical-align: middle;
+          vertical-align: baseline;
         ">${icon}</span>
         <span class="emotion-confidence" style="
           font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.5px;
           opacity: 0.8;
-          vertical-align: middle;
+          vertical-align: baseline;
         ">${confidence}%</span>
       </span>
     `;

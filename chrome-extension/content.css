@@ -1,20 +1,20 @@
 /* Google Chat Emotion Analyzer - スタイル */
 
 .emotion-analyzer-icon {
-  display: inline;
+  display: inline !important;
   z-index: 10000;
-  vertical-align: baseline;
-  line-height: 0;
-  margin: 0;
-  padding: 0;
+  vertical-align: baseline !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* 感情アイコンコンテナの詳細スタイル */
 .emotion-icon-container {
   position: relative;
   display: inline-flex !important;
-  vertical-align: baseline;
-  line-height: normal;
+  vertical-align: baseline !important;
+  line-height: 1 !important;
 }
 
 /* 感情分析ステータス表示 */
