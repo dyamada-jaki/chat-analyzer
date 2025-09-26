@@ -331,6 +331,12 @@ class ChatEmotionAnalyzer {
 
   // メッセージ処理
   processMessage(messageElement, sourceSelector = 'unknown') {
+    // 要素がメッセージコンテナ内にあるかチェック
+    if (!this.isInMessageContainer(messageElement)) {
+      console.log('⚠️ メッセージコンテナ外の要素をスキップ');
+      return;
+    }
+    
     // より確実なユニークID生成
     const dataId = messageElement.getAttribute('data-id');
     const messageText = messageElement.textContent?.trim() || '';
@@ -367,12 +373,59 @@ class ChatEmotionAnalyzer {
           hasContent: !!messageData.content,
           hasUserName: !!messageData.userName,
           contentLength: messageData.content?.length || 0,
-          isSystemMessage: this.isSystemMessage(messageData.content)
+          isSystemMessage: this.isSystemMessage(messageData.content),
+          isUIElement: this.isUIElement(messageData.content)
         });
       }
     } catch (error) {
       console.error('❌ メッセージ処理エラー:', error);
     }
+  }
+
+  // メッセージコンテナ内の要素かチェック
+  isInMessageContainer(element) {
+    // チャットメッセージエリアを示すセレクタ
+    const messageContainerSelectors = [
+      '[role="main"]',           // メインコンテンツエリア
+      '.nF6pT',                  // Google Chatメッセージコンテナ
+      '.bzJiD',                  // チャットストリーム
+      '.Tm1pwc',                 // メッセージリスト
+      '.yqoUIf'                  // メッセージ要素
+    ];
+    
+    for (const selector of messageContainerSelectors) {
+      if (element.closest(selector)) {
+        return true;
+      }
+    }
+    
+    // URLベースでの追加チェック
+    const isGmailChat = window.location.hostname.includes('mail.google.com') && 
+                       window.location.pathname.includes('chat');
+    const isStandaloneChat = window.location.hostname.includes('chat.google.com');
+    
+    if (!(isGmailChat || isStandaloneChat)) {
+      return false;
+    }
+    
+    // ナビゲーション・ヘッダー要素を除外
+    const excludeContainers = [
+      '[role="banner"]',         // ヘッダー
+      '[role="navigation"]',     // ナビゲーション
+      '.gb_pc',                  // Googleバー
+      '.nH',                     // Gmailヘッダー
+      '[data-action-button]',    // アクションボタン
+      '.Z0LcW',                  // サイドバー
+      '[role="complementary"]'   // 補助コンテンツ
+    ];
+    
+    for (const selector of excludeContainers) {
+      if (element.closest(selector)) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   // メッセージの有効性をチェック
@@ -381,7 +434,45 @@ class ChatEmotionAnalyzer {
            messageData.content.trim() && 
            messageData.content.length > 2 && 
            messageData.userName &&
-           !this.isSystemMessage(messageData.content);
+           !this.isSystemMessage(messageData.content) &&
+           !this.isUIElement(messageData.content);
+  }
+
+  // UI要素かどうかを判定
+  isUIElement(content) {
+    if (!content) return true;
+    
+    const uiPatterns = [
+      /^New Chat$/i,
+      /^Settings$/i,
+      /^設定$/,
+      /^Menu$/i,
+      /^メニュー$/,
+      /^Search$/i,
+      /^検索$/,
+      /^More$/i,
+      /^その他$/,
+      /^Close$/i,
+      /^閉じる$/,
+      /^Back$/i,
+      /^戻る$/,
+      /^Next$/i,
+      /^次へ$/,
+      /^Cancel$/i,
+      /^キャンセル$/,
+      /^Send$/i,
+      /^送信$/,
+      /^Share$/i,
+      /^共有$/,
+      /^Delete$/i,
+      /^削除$/,
+      /^Archive$/i,
+      /^アーカイブ$/,
+      /^Mute$/i,
+      /^ミュート$/
+    ];
+    
+    return uiPatterns.some(pattern => pattern.test(content.trim()));
   }
 
   // システムメッセージかどうかを判定
@@ -504,6 +595,10 @@ class ChatEmotionAnalyzer {
     try {
       console.log('🧠 感情分析を開始:', messageData.content);
       
+      // バックエンドに3秒のタイムアウトを設定
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
       const response = await fetch(`${this.backendUrl}/api/webhook/test-message`, {
         method: 'POST',
         headers: {
@@ -513,16 +608,18 @@ class ChatEmotionAnalyzer {
           content: messageData.content,
           userName: messageData.userName,
           userId: messageData.userId
-        })
+        }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       const result = await response.json();
       
       if (result.success && result.emotion) {
         const emotion = result.emotion.emotion;
         const confidence = Math.round(result.emotion.confidence * 100);
         
-        console.log(`📊 感情分析結果: ${emotion} (${confidence}%)`);
+        console.log(`📊 感情分析結果 (バックエンド): ${emotion} (${confidence}%)`);
         
         // 感情アイコンを表示
         this.displayEmotionIcon(messageElement, emotion, confidence);
@@ -533,10 +630,13 @@ class ChatEmotionAnalyzer {
           confidence,
           messageData
         });
+      } else {
+        throw new Error('バックエンドから有効な感情分析結果が返されませんでした');
       }
     } catch (error) {
-      console.error('❌ 感情分析エラー:', error);
-      // フォールバック: ローカル感情分析
+      console.error('❌ 感情分析エラー:', error.message);
+      // 確実にフォールバック分析を実行
+      console.log('🔄 ローカル感情分析にフォールバック');
       this.fallbackEmotionAnalysis(messageData, messageElement);
     }
   }
