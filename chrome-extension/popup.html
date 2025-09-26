@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: 'Google Sans', Arial, sans-serif;
+      margin: 0;
+      background: #f8f9fa;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 500;
+      color: #333;
+      margin: 0 0 8px 0;
+    }
+    
+    .header .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin: 0;
+    }
+    
+    .status-card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-dot.active {
+      background: #4CAF50;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+    
+    .status-dot.inactive {
+      background: #9E9E9E;
+    }
+    
+    .emotion-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .emotion-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .emotion-emoji {
+      margin-right: 4px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #1976D2;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #1565C0;
+    }
+    
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #d5d5d5;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>💬 Chat Emotion Analyzer</h1>
+    <p class="subtitle">Google Chatの感情分析</p>
+  </div>
+
+  <div class="status-card">
+    <div class="status-indicator">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">ステータス確認中...</span>
+    </div>
+    
+    <div style="font-size: 12px; color: #666;">
+      <div>処理済みメッセージ: <span id="message-count">0</span>件</div>
+      <div>バックエンド接続: <span id="backend-status">確認中</span></div>
+    </div>
+    
+    <div class="emotion-stats" id="emotion-stats">
+      <div class="emotion-item">
+        <span><span class="emotion-emoji">😊</span>ポジティブ</span>
+        <span id="positive-count">0</span>
+      </div>
+      <div class="emotion-item">
+        <span><span class="emotion-emoji">😢</span>ネガティブ</span>
+        <span id="negative-count">0</span>
+      </div>
+      <div class="emotion-item">
+        <span><span class="emotion-emoji">😠</span>怒り</span>
+        <span id="angry-count">0</span>
+      </div>
+      <div class="emotion-item">
+        <span><span class="emotion-emoji">😐</span>中立</span>
+        <span id="neutral-count">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="refresh-btn">更新</button>
+    <button class="btn btn-secondary" id="clear-btn">クリア</button>
+  </div>
+  
+  <div class="controls" style="margin-top: 8px;">
+    <button class="btn btn-secondary" id="debug-btn" style="font-size: 11px;">詳細デバッグ</button>
+    <button class="btn btn-secondary" id="reanalyze-btn" style="font-size: 11px;">再分析実行</button>
+    <button class="btn btn-secondary" id="find-messages-btn" style="font-size: 11px;">メッセージ検索</button>
+    <button class="btn btn-secondary" id="test-mutation-btn" style="font-size: 11px;">監視テスト</button>
+    <button class="btn btn-secondary" id="debug-all-changes-btn" style="font-size: 11px;">全変更監視</button>
+    <button class="btn btn-secondary" id="investigate-structure-btn" style="font-size: 11px;">構造調査</button>
+  </div>
+
+  <div class="footer">
+    <p>v1.0.0 | chat.google.com で動作</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

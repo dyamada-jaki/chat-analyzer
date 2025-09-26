@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Google Chat Emotion Analyzer",
+  "version": "1.0.0",
+  "description": "Google Chatでのメッセージをリアルタイムで感情分析し、感情アイコンを表示します。",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://chat.google.com/*",
+    "https://mail.google.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://chat.google.com/*", "https://mail.google.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Chat Emotion Analyzer"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

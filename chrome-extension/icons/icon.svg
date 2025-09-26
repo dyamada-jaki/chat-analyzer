@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景グラデーション -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4285F4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#673AB7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="chatGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F8F9FA;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景円 -->
+  <circle cx="64" cy="64" r="60" fill="url(#bgGradient)" stroke="#1976D2" stroke-width="2"/>
+  
+  <!-- チャットバブル -->
+  <path d="M35 40 Q30 40 30 45 L30 65 Q30 70 35 70 L50 70 L55 75 L60 70 L85 70 Q90 70 90 65 L90 45 Q90 40 85 40 Z" fill="url(#chatGradient)" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- 感情アイコン群 -->
+  <!-- ポジティブ（左上） -->
+  <circle cx="45" cy="50" r="6" fill="#4CAF50"/>
+  <circle cx="43" cy="48" r="1" fill="#FFFFFF"/>
+  <circle cx="47" cy="48" r="1" fill="#FFFFFF"/>
+  <path d="M41 52 Q45 55 49 52" stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- 怒り（右上） -->
+  <circle cx="75" cy="50" r="6" fill="#F44336"/>
+  <circle cx="73" cy="48" r="1" fill="#FFFFFF"/>
+  <circle cx="77" cy="48" r="1" fill="#FFFFFF"/>
+  <path d="M71 53 Q75 50 79 53" stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- ネガティブ（左下） -->
+  <circle cx="45" cy="85" r="6" fill="#2196F3"/>
+  <circle cx="43" cy="83" r="1" fill="#FFFFFF"/>
+  <circle cx="47" cy="83" r="1" fill="#FFFFFF"/>
+  <path d="M41 88 Q45 85 49 88" stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- 中立（右下） -->
+  <circle cx="75" cy="85" r="6" fill="#9E9E9E"/>
+  <circle cx="73" cy="83" r="1" fill="#FFFFFF"/>
+  <circle cx="77" cy="83" r="1" fill="#FFFFFF"/>
+  <line x1="71" y1="87" x2="79" y2="87" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- 中央の分析アイコン -->
+  <circle cx="64" cy="105" r="8" fill="#FF9800" opacity="0.9"/>
+  <path d="M60 102 L64 106 L68 102" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="108" r="1" fill="#FFFFFF"/>
+</svg>
