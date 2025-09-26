@@ -123,6 +123,7 @@ class ChatEmotionAnalyzer {
 
   // 既存のメッセージを処理
   processExistingMessages() {
+    console.log('📋 既存メッセージの処理を開始...');
     // Gmail統合Chat用の正確なセレクタ（実際のDOM構造に基づく）
     const gmailMessageSelectors = [
       'div[data-message-id]',                    // メッセージID付きの要素
@@ -155,11 +156,10 @@ class ChatEmotionAnalyzer {
         console.log(`✅ ${selector}で有効なメッセージ候補: ${validMessages.length}件`);
         
         if (validMessages.length > 0) {
+          console.log(`📝 ${selector}で${validMessages.length}件の既存メッセージを処理開始...`);
           validMessages.forEach((messageElement, i) => {
-            if (i < 5) { // 最大5件まで処理
-              console.log(`📝 処理中[${i}]: ${messageElement.tagName} - ${messageElement.textContent?.substring(0, 50)}...`);
-              this.processMessage(messageElement, selector);
-            }
+            console.log(`📝 処理中[${i}]: ${messageElement.tagName} - ${messageElement.textContent?.substring(0, 50)}...`);
+            this.processMessage(messageElement, `existing-${selector}`);
           });
           totalFound += validMessages.length;
           break; // 有効なセレクタが見つかったら他は試行しない
@@ -171,7 +171,10 @@ class ChatEmotionAnalyzer {
     
     // 全てのセレクタで見つからない場合は、より広範囲に探索
     if (totalFound === 0) {
+      console.log('⚠️ 既存メッセージが見つからないため、より広範囲に探索します...');
       this.exploreAllElements();
+    } else {
+      console.log(`✅ 既存メッセージ処理完了: ${totalFound}件のメッセージを処理しました`);
     }
   }
 
@@ -1639,6 +1642,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   } else if (request.action === 'messageDetectionTest') {
     window.messageDetectionTest();
+    sendResponse({ success: true });
+  } else if (request.action === 'processExistingMessages') {
+    window.chatEmotionAnalyzer.processExistingMessages();
     sendResponse({ success: true });
   } else if (request.action === 'ping') {
     sendResponse({ pong: true });

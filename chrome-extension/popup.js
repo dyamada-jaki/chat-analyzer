@@ -238,6 +238,25 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('investigate-structure-btn').addEventListener('click', investigateStructure);
   document.getElementById('current-dom-analysis-btn').addEventListener('click', currentDOMAnalysis);
   document.getElementById('message-detection-test-btn').addEventListener('click', messageDetectionTest);
+  document.getElementById('process-existing-messages-btn').addEventListener('click', processExistingMessages);
+
+  // 既存メッセージ再処理（新機能）
+  async function processExistingMessages() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      const isGoogleChat = tab.url.includes('chat.google.com') || 
+                          tab.url.includes('mail.google.com/chat') ||
+                          tab.url.includes('google.com/chat');
+      
+      if (isGoogleChat) {
+        await chrome.tabs.sendMessage(tab.id, { action: 'processExistingMessages' });
+        console.log('✅ 既存メッセージの再処理を開始しました。コンソールを確認してください。');
+      }
+    } catch (error) {
+      console.error('既存メッセージ再処理エラー:', error);
+    }
+  }
 
   // 構造調査（新機能）
   async function investigateStructure() {
