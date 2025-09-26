@@ -447,7 +447,11 @@ class ChatEmotionAnalyzer {
       '.Z0LcW',                  // サイドバー
       '[role="complementary"]',  // 補助コンテンツ
       '#gb',                     // Google Bar ID
-      '.pGxpHc'                  // 外側コンテナ
+      '.pGxpHc',                 // 外側コンテナ
+      '[jscontroller="KF64he"]', // New chatボタンコントローラー
+      '[data-is-fab="true"]',    // Floating Action Button
+      'button[jsname="TrXBg"]',  // New chatボタン
+      '[role="tooltip"]'         // ツールチップ
     ];
     
     for (const selector of excludeContainers) {
@@ -475,7 +479,14 @@ class ChatEmotionAnalyzer {
       /^lJradf/,      // ステータス要素
       /^gstl_/,       // 検索関連
       /^gsib_/,       // 検索ボックス
-      /^RBHQF/        // その他のGoogle UI
+      /^RBHQF/,       // その他のGoogle UI
+      /^T57Ued/,      // New chatボタン: T57Ued-BIzmGd, T57Ued-Q0XOV 等
+      /^SXdXAb/,      // ボタン内部要素: SXdXAb-BFbNVe, SXdXAb-ugnUJb
+      /^OiePBf/,      // ボタン要素: OiePBf-zPjgPe
+      /^pnsM6e/,      // コンテナ要素
+      /^VpAp7d/,      // ツールチップラッパー
+      /^ne2Ple/,      // ツールチップ: ne2Ple-oshW8e-V67aGc
+      /^G01np/        // アイコンコンテナ
     ];
     
     const elementClasses = element.className || '';
@@ -500,6 +511,39 @@ class ChatEmotionAnalyzer {
     
     // header タグで id="gb" の場合
     if (element.tagName === 'HEADER' && element.id === 'gb') {
+      return true;
+    }
+    
+    // jscontroller 属性（Google Web Components）
+    if (element.hasAttribute('jscontroller')) {
+      const jscontroller = element.getAttribute('jscontroller');
+      const googleControllers = ['KF64he', 'IUkCmb', 'LBaJxb', 'PIVayb', 'uxulBc'];
+      if (googleControllers.includes(jscontroller)) {
+        return true;
+      }
+    }
+    
+    // jsaction 属性（Google Event System）
+    if (element.hasAttribute('jsaction')) {
+      return true;
+    }
+    
+    // jsname 属性で Google UI要素を判定
+    if (element.hasAttribute('jsname')) {
+      const jsname = element.getAttribute('jsname');
+      const googleJSNames = ['TrXBg', 'm9ZlFb', 'ENL0A', 'V67aGc'];
+      if (googleJSNames.includes(jsname)) {
+        return true;
+      }
+    }
+    
+    // data-is-fab（Floating Action Button）
+    if (element.hasAttribute('data-is-fab')) {
+      return true;
+    }
+    
+    // data-tooltip-id（ツールチップ関連）
+    if (element.hasAttribute('data-tooltip-id')) {
       return true;
     }
     

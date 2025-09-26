@@ -1112,3 +1112,16 @@ Aから進めたいと思っていましたので、それからお願いしま�
 
 **完全修正完了です！確認をお願いします！** 🎯✨
 
+[User]: もう一つはここに出ているアニメーションも消えて欲しいです
+
+<div jsaction="keydown:mAamLc;JIbuQc:fbryk;wjPeV:cB33x;Ljnxzf:fbryk;xcBozd:aNdshc" jscontroller="KF64he" jslog="247721; track:click,keyboard_enter,keypress,impression">...
+
+[Assistant]: ## 🔍 **"New chat" ボタンへの誤配置確認 - 追加除外が必要**
+
+**問題箇所の特定:**
+- **要素**: `<button class="T57Ued-BIzmGd...">` (New chatボタン)
+- **問題**: New chatボタン内にアイコンが誤配置
+- **原因**: Google Chatボタン系のクラス名が除外パターンに不足
+
+### **🛠️ 追加のGoogle UIクラス除外実装**
+
