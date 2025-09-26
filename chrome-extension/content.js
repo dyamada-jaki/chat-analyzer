@@ -623,46 +623,48 @@ class ChatEmotionAnalyzer {
       <div class="emotion-icon-container" style="
         display: inline-flex;
         align-items: center;
-        margin-left: 8px;
-        padding: 4px 8px;
+        margin-left: 6px;
+        padding: 2px 6px;
         background: linear-gradient(135deg, ${color}15, ${color}25);
         border: 1px solid ${color}40;
-        border-radius: 16px;
-        font-size: 14px;
+        border-radius: 12px;
+        font-size: 12px;
         color: ${color};
         font-weight: 600;
         cursor: help;
         opacity: ${opacity};
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: opacity 0.2s ease;
         backdrop-filter: blur(4px);
-        box-shadow: 0 2px 4px ${color}20, 0 1px 2px ${color}10;
-        transform: scale(0);
-        animation: emotionPopIn 0.5s ease-out forwards;
+        box-shadow: 0 1px 2px ${color}20;
+        vertical-align: middle;
+        line-height: 1;
       " title="感情分析: ${label} (確信度: ${confidence}%)">
         <span class="emotion-emoji" style="
-          margin-right: 4px;
-          font-size: 16px;
-          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
-          animation: emotionPulse 2s ease-in-out infinite;
+          margin-right: 3px;
+          font-size: 14px;
+          line-height: 1;
+          vertical-align: middle;
         ">${icon}</span>
         <span class="emotion-confidence" style="
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 700;
           letter-spacing: 0.5px;
           opacity: 0.8;
+          line-height: 1;
+          vertical-align: middle;
         ">${confidence}%</span>
       </div>
     `;
 
     const container = iconElement.querySelector('.emotion-icon-container');
     container.addEventListener('mouseenter', () => {
-      container.style.transform = 'scale(1.05)';
-      container.style.boxShadow = `0 4px 12px ${color}30, 0 2px 4px ${color}20`;
+      container.style.opacity = '1';
+      container.style.boxShadow = `0 2px 6px ${color}30`;
     });
     
     container.addEventListener('mouseleave', () => {
-      container.style.transform = 'scale(1)';
-      container.style.boxShadow = `0 2px 4px ${color}20, 0 1px 2px ${color}10`;
+      container.style.opacity = opacity.toString();
+      container.style.boxShadow = `0 1px 2px ${color}20`;
     });
 
     this.insertEmotionIcon(messageElement, iconElement);
