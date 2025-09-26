@@ -1269,3 +1269,26 @@ Aから進めたいと思っていましたので、それからお願いしま�
 
 **Gmail統合Chatでの完全動作を実現しました！** 🎯✨
 
+[User]: 左上のアニメーションは消えました！
+ですが、メッセージのところにアニメーションがほとんど出ません。スクロールしていたら１箇所だけでました。
+また、拡張機能でエラーが発生していたので、これが関係しているか調べてみてください。
+
+Uncaught TypeError: elementClasses.includes is not a function
+コンテキスト
+https://mail.google.com/chat/u/0/#chat/space/AAQA6AJ-JPU
+スタック トレース
+content.js:502 (isDefinitelyMessageElement)
+content.js:194 (無名関数)
+content.js:189 (無名関数)  
+content.js:186 (無名関数)
+
+[Assistant]: ## 🚨 **JavaScript エラーによる機能停止 - 緊急修正**
+
+**エラー解析:**
+- **エラー**: `elementClasses.includes is not a function`
+- **発生場所**: `content.js:502 (isDefinitelyMessageElement)`
+- **原因**: `elementClasses`が文字列でなく別のデータ型の可能性
+- **影響**: メッセージ検出機能がほぼ停止（1箇所のみ表示）
+
+### **🔧 緊急バグ修正実装**
+

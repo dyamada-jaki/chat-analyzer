@@ -483,26 +483,35 @@ class ChatEmotionAnalyzer {
     return true;
   }
 
+  // 安全なクラス名取得ヘルパー
+  getElementClasses(element) {
+    if (!element || !element.className) return '';
+    return typeof element.className === 'string' ? 
+           element.className : 
+           element.className.toString();
+  }
+
   // 確実にメッセージ要素かどうかを判定
   isDefinitelyMessageElement(element) {
     if (!element) return false;
     
-    // メッセージテキストの確実なクラス名
-    const messageTextClasses = [
-      'DTp27d QIJiHb',           // Google Chat メッセージテキスト
-      'DTp27d QIJiHb Zc1Emd',    // 拡張版
-      'yqoUIf',                   // メッセージ要素
-      'nF6pT'                     // メッセージコンテナ
-    ];
-    
-    const elementClasses = element.className || '';
-    
-    // 完全一致でメッセージテキストクラスをチェック
-    for (const messageClass of messageTextClasses) {
-      if (elementClasses.includes(messageClass)) {
-        return true;
+    try {
+      // メッセージテキストの確実なクラス名
+      const messageTextClasses = [
+        'DTp27d QIJiHb',           // Google Chat メッセージテキスト
+        'DTp27d QIJiHb Zc1Emd',    // 拡張版
+        'yqoUIf',                   // メッセージ要素
+        'nF6pT'                     // メッセージコンテナ
+      ];
+      
+      const elementClasses = this.getElementClasses(element);
+      
+      // 完全一致でメッセージテキストクラスをチェック
+      for (const messageClass of messageTextClasses) {
+        if (elementClasses.includes(messageClass)) {
+          return true;
+        }
       }
-    }
     
     // jsname="bgckF" でメッセージテキストを確認
     if (element.getAttribute('jsname') === 'bgckF' && 
@@ -536,20 +545,25 @@ class ChatEmotionAnalyzer {
         (element.closest('[role="main"]') || 
          element.closest('.nF6pT') || 
          element.closest('.yqoUIf'))) {
-      return true;
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ isDefinitelyMessageElement エラー:', error);
+      return false;
     }
-    
-    return false;
   }
 
   // Google UI要素かどうかを判定
   isGoogleUIElement(element) {
     if (!element) return false;
     
-    // まず、確実にメッセージ要素でないことを確認
-    if (this.isDefinitelyMessageElement(element)) {
-      return false;
-    }
+    try {
+      // まず、確実にメッセージ要素でないことを確認
+      if (this.isDefinitelyMessageElement(element)) {
+        return false;
+      }
     
     // Google特有のクラス名パターン（メッセージ要素と競合しないもののみ）
     const googleClassPatterns = [
@@ -583,7 +597,7 @@ class ChatEmotionAnalyzer {
       /^bbg$/         // Gmail 要素
     ];
     
-    const elementClasses = element.className || '';
+    const elementClasses = this.getElementClasses(element);
     
     // クラス名での判定（ただし、メッセージ関連クラスがある場合は除外しない）
     if (elementClasses.includes('DTp27d') || 
@@ -665,11 +679,15 @@ class ChatEmotionAnalyzer {
     const elementStyle = element.getAttribute('style') || '';
     if (elementStyle.includes('top: -10000px') || 
         elementStyle.includes('width: 1114px') ||
-        elementStyle.includes('position: relative') && elementClasses.includes('nH')) {
+        (elementStyle.includes('position: relative') && elementClasses.includes('nH'))) {
       return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ isGoogleUIElement エラー:', error);
+      return false;
     }
-    
-    return false;
   }
 
   // メッセージの有効性をチェック
