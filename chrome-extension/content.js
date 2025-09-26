@@ -485,56 +485,131 @@ class ChatEmotionAnalyzer {
 
   // 感情アイコンを表示
   displayEmotionIcon(messageElement, emotion, confidence) {
+    console.log(`🎨 感情アイコン表示開始: ${emotion} (${confidence}%)`);
+    
     // 既存のアイコンを削除
     const existingIcon = messageElement.querySelector('.emotion-analyzer-icon');
     if (existingIcon) {
+      console.log('🗑️ 既存アイコンを削除');
       existingIcon.remove();
     }
 
-    // 感情アイコンマッピング
+    // 感情アイコンマッピング（より豊富な絵文字）
     const emotionIcons = {
       'positive': '😊',
-      'negative': '😢',
+      'negative': '😢', 
       'angry': '😠',
       'neutral': '😐'
     };
 
+    // 美しいカラーパレット
     const emotionColors = {
-      'positive': '#4CAF50',
-      'negative': '#2196F3',
-      'angry': '#F44336',
-      'neutral': '#9E9E9E'
+      'positive': '#10B981', // emerald-500
+      'negative': '#3B82F6', // blue-500  
+      'angry': '#EF4444',    // red-500
+      'neutral': '#6B7280'   // gray-500
+    };
+
+    const emotionLabels = {
+      'positive': 'ポジティブ',
+      'negative': 'ネガティブ',
+      'angry': '怒り・不満',
+      'neutral': 'ニュートラル'
     };
 
     const icon = emotionIcons[emotion] || '😐';
-    const color = emotionColors[emotion] || '#9E9E9E';
+    const color = emotionColors[emotion] || '#6B7280';
+    const label = emotionLabels[emotion] || 'ニュートラル';
 
+    // 信頼度に応じた透明度
+    const opacity = Math.max(0.6, confidence / 100);
+    
     // アイコン要素を作成
     const iconElement = document.createElement('div');
     iconElement.className = 'emotion-analyzer-icon';
+    
+    // 高品質なスタイリング
     iconElement.innerHTML = `
-      <div style="
+      <div class="emotion-icon-container" style="
         display: inline-flex;
         align-items: center;
         margin-left: 8px;
-        padding: 2px 6px;
-        background: ${color}20;
+        padding: 4px 8px;
+        background: linear-gradient(135deg, ${color}15, ${color}25);
         border: 1px solid ${color}40;
-        border-radius: 12px;
+        border-radius: 16px;
         font-size: 14px;
         color: ${color};
-        font-weight: 500;
+        font-weight: 600;
         cursor: help;
-      " title="感情: ${emotion} (確信度: ${confidence}%)">
-        <span style="margin-right: 4px;">${icon}</span>
-        <span style="font-size: 11px;">${confidence}%</span>
+        opacity: ${opacity};
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 4px ${color}20, 0 1px 2px ${color}10;
+        transform: scale(0);
+        animation: emotionPopIn 0.5s ease-out forwards;
+      " title="感情分析: ${label} (確信度: ${confidence}%)">
+        <span class="emotion-emoji" style="
+          margin-right: 4px;
+          font-size: 16px;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+          animation: emotionPulse 2s ease-in-out infinite;
+        ">${icon}</span>
+        <span class="emotion-confidence" style="
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          opacity: 0.8;
+        ">${confidence}%</span>
       </div>
     `;
 
-    // 送信者名の後にアイコンを挿入
-    const userNameElement = messageElement.querySelector('.njhDLd.O5OMdc');
-    if (userNameElement && userNameElement.parentNode) {
-      userNameElement.parentNode.insertBefore(iconElement, userNameElement.nextSibling);
+    // ホバーエフェクトのイベントリスナー
+    const container = iconElement.querySelector('.emotion-icon-container');
+    container.addEventListener('mouseenter', () => {
+      container.style.transform = 'scale(1.05)';
+      container.style.boxShadow = `0 4px 12px ${color}30, 0 2px 4px ${color}20`;
+    });
+    
+    container.addEventListener('mouseleave', () => {
+      container.style.transform = 'scale(1)';
+      container.style.boxShadow = `0 2px 4px ${color}20, 0 1px 2px ${color}10`;
+    });
+
+    // 最適な挿入位置を見つける
+    this.insertEmotionIcon(messageElement, iconElement);
+    
+    console.log(`✨ 感情アイコン表示完了: ${label} ${icon}`);
+  }
+
+  // 感情アイコンの最適な挿入位置を決定
+  insertEmotionIcon(messageElement, iconElement) {
+    // 挿入位置の候補を優先順で試行
+    const insertionTargets = [
+      // Gmail Chat統合版のユーザー名要素
+      '.njhDLd.O5OMdc',
+      // スタンドアロンGoogle Chatのユーザー名要素  
+      '[data-name]',
+      // メッセージコンテナ
+      '.DTp27d.QIJiHb',
+      // フォールバック: メッセージ要素自体
+      null
+    ];
+
+    for (const selector of insertionTargets) {
+      if (selector === null) {
+        // 最後の手段: メッセージ要素の最初に挿入
+        messageElement.insertBefore(iconElement, messageElement.firstChild);
+        console.log('📍 アイコン挿入位置: メッセージ要素の先頭');
+        return;
+      }
+      
+      const targetElement = messageElement.querySelector(selector);
+      if (targetElement && targetElement.parentNode) {
+        targetElement.parentNode.insertBefore(iconElement, targetElement.nextSibling);
+        console.log(`📍 アイコン挿入位置: ${selector} の後`);
+        return;
+      }
     }
   }
 
