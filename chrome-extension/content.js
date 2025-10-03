@@ -21,6 +21,9 @@ class ChatEmotionAnalyzer {
     // DOM要素のデバッグ調査
     this.debugDOMStructure();
     
+    // New chatボタンコンテナのクリーンアップ
+    this.cleanupNewChatButtons();
+    
     // 既存のメッセージを処理
     this.processExistingMessages();
     
@@ -33,6 +36,26 @@ class ChatEmotionAnalyzer {
     this.testBackendConnection();
     
     console.log('✅ 初期化完了 - observer:', typeof this.observer);
+  }
+
+  // New chatボタンコンテナから既存の感情アイコンを削除
+  cleanupNewChatButtons() {
+    console.log('🧹 New chatボタンコンテナのクリーンアップを開始');
+    
+    // KF64heコントローラーを持つ要素を検索
+    const newChatContainers = document.querySelectorAll('[jscontroller="KF64he"]');
+    
+    newChatContainers.forEach(container => {
+      if (this.isNewChatButton(container)) {
+        const existingIcons = container.querySelectorAll('.emotion-analyzer-icon');
+        if (existingIcons.length > 0) {
+          console.log(`🗑️ New chatボタンコンテナから${existingIcons.length}個の感情アイコンを削除`);
+          existingIcons.forEach(icon => icon.remove());
+        }
+      }
+    });
+    
+    console.log('✅ New chatボタンコンテナのクリーンアップ完了');
   }
 
   // DOM構造をデバッグ調査
@@ -382,23 +405,46 @@ class ChatEmotionAnalyzer {
     }
   }
 
-  // "New chat"ボタンの特定検出
+  // "New chat"ボタンコンテナの特定検出
   isNewChatButton(element) {
     if (!element) return false;
     
     const textContent = element.textContent?.trim().toLowerCase() || '';
     const jsname = element.getAttribute('jsname') || '';
+    const jscontroller = element.getAttribute('jscontroller') || '';
     const elementClasses = this.getElementClasses(element);
     
-    // "New chat"ボタンの特定条件
+    // 1. 直接的な"New chat"ボタン要素の検出
     if (textContent === 'new chat' || 
         jsname === 'V67aGc' || 
         elementClasses.includes('T57Ued-nBWOSb')) {
-      console.log('🎯 New chatボタンを特定検出:', element.textContent?.trim());
+      console.log('🎯 New chatボタンを直接検出:', element.textContent?.trim());
       return true;
     }
     
-    // 親要素からの検出
+    // 2. New chatボタンコンテナの検出（最重要！）
+    if (jscontroller === 'KF64he' && element.querySelector('[jsname="V67aGc"]')) {
+      console.log('🎯 New chatボタンコンテナを検出 (KF64he + V67aGc child)');
+      return true;
+    }
+    
+    // 3. "New chat"テキストを含む要素の親コンテナ検出
+    if (element.querySelector('.T57Ued-nBWOSb') || 
+        element.querySelector('span[jsname="V67aGc"]')) {
+      console.log('🎯 New chatボタンの親コンテナを検出');
+      return true;
+    }
+    
+    // 4. 子要素に"New chat"テキストがある場合
+    const newChatSpans = element.querySelectorAll('span');
+    for (const span of newChatSpans) {
+      if (span.textContent?.trim().toLowerCase() === 'new chat') {
+        console.log('🎯 New chatテキストの親コンテナを検出');
+        return true;
+      }
+    }
+    
+    // 5. 従来の親要素からの検出
     if (element.closest('[jsname="V67aGc"]') ||
         element.closest('.T57Ued-nBWOSb') ||
         element.closest('button')?.textContent?.trim().toLowerCase() === 'new chat') {
@@ -707,6 +753,20 @@ class ChatEmotionAnalyzer {
   // 感情アイコンの最適な挿入位置を決定
   insertEmotionIcon(messageElement, iconElement) {
     const messageContainer = messageElement.closest('[data-id]') || messageElement;
+    
+    // New chatボタンコンテナの場合は挿入を拒否
+    if (this.isNewChatButton(messageContainer)) {
+      console.log('🚫 New chatボタンコンテナのため感情アイコン挿入を拒否');
+      
+      // 既存の感情アイコンがあれば削除
+      const existingIcons = messageContainer.querySelectorAll('.emotion-analyzer-icon');
+      if (existingIcons.length > 0) {
+        console.log(`🗑️ New chatボタンコンテナから${existingIcons.length}個の既存アイコンを削除`);
+        existingIcons.forEach(icon => icon.remove());
+      }
+      
+      return;
+    }
     
     // 優先順位1: メッセージテキスト要素の直後（DIV外部配置）
     const messageTextElement = messageContainer.querySelector('.DTp27d.QIJiHb, [jsname="bgckF"]');
