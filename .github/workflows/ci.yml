@@ -1,0 +1,193 @@
+name: 🧪 CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # バックエンドテスト
+  backend-test:
+    name: 🔧 Backend Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: backend/pnpm-lock.yaml
+        
+    - name: 📦 Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: latest
+        
+    - name: 📚 Install dependencies
+      working-directory: ./backend
+      run: pnpm install --frozen-lockfile
+      
+    - name: 🏗️ Build backend
+      working-directory: ./backend
+      run: pnpm build
+      
+    - name: 🧪 Run tests
+      working-directory: ./backend
+      run: pnpm test --run
+      
+    - name: 📊 Upload coverage reports
+      if: matrix.node-version == '20.x'
+      uses: codecov/codecov-action@v4
+      with:
+        directory: ./backend
+        fail_ci_if_error: false
+
+  # Chrome拡張機能ビルド検証
+  chrome-extension-build:
+    name: 🌐 Chrome Extension Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: ✅ Validate manifest.json
+      working-directory: ./chrome-extension
+      run: |
+        # manifest.jsonの構文チェック
+        node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8'))"
+        echo "✅ manifest.json is valid"
+        
+    - name: 🔍 Check required files
+      working-directory: ./chrome-extension
+      run: |
+        # 必須ファイルの存在確認
+        files=("manifest.json" "content.js" "content.css" "popup.html" "popup.js" "background.js")
+        for file in "${files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Missing required file: $file"
+            exit 1
+          else
+            echo "✅ Found: $file"
+          fi
+        done
+        
+    - name: 📏 Check file sizes
+      working-directory: ./chrome-extension
+      run: |
+        # ファイルサイズチェック（Chrome Web Store制限）
+        max_size=20971520  # 20MB
+        for file in *.js *.css *.html; do
+          if [ -f "$file" ]; then
+            size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file")
+            if [ $size -gt $max_size ]; then
+              echo "❌ File too large: $file ($size bytes > $max_size bytes)"
+              exit 1
+            else
+              echo "✅ Size OK: $file ($size bytes)"
+            fi
+          fi
+        done
+
+  # セキュリティ監査
+  security-audit:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: 📦 Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: latest
+        
+    - name: 🔍 Security audit
+      working-directory: ./backend
+      run: |
+        pnpm install --frozen-lockfile
+        pnpm audit --audit-level moderate
+        
+    - name: 🔐 Check for secrets
+      run: |
+        # 機密情報の漏洩チェック
+        if grep -r -i "api[_-]key\|secret\|password\|token" --include="*.js" --include="*.ts" --include="*.json" . | grep -v node_modules | grep -v ".git" | grep -v "test" | grep -v "example"; then
+          echo "❌ Potential secrets found in code"
+          exit 1
+        else
+          echo "✅ No secrets detected"
+        fi
+
+  # ドキュメント検証
+  docs-validation:
+    name: 📚 Documentation Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: ✅ Check README.md
+      run: |
+        if [ ! -f "README.md" ]; then
+          echo "❌ README.md is missing"
+          exit 1
+        fi
+        
+        # README.mdの基本構造チェック
+        required_sections=("# " "## " "### ")
+        for section in "${required_sections[@]}"; do
+          if ! grep -q "^$section" README.md; then
+            echo "❌ README.md missing proper headings"
+            exit 1
+          fi
+        done
+        echo "✅ README.md structure is valid"
+        
+    - name: 📋 Validate package.json
+      working-directory: ./backend
+      run: |
+        # package.jsonの必須フィールドチェック
+        node -e "
+          const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
+          const required = ['name', 'version', 'scripts'];
+          for (const field of required) {
+            if (!pkg[field]) {
+              console.error(\`❌ Missing required field: \${field}\`);
+              process.exit(1);
+            }
+          }
+          console.log('✅ package.json is valid');
+        "
+
+  # 統合テスト完了通知
+  integration-complete:
+    name: ✅ Integration Complete
+    runs-on: ubuntu-latest
+    needs: [backend-test, chrome-extension-build, security-audit, docs-validation]
+    
+    steps:
+    - name: 🎉 All checks passed
+      run: |
+        echo "🎉 All CI/CD checks completed successfully!"
+        echo "✅ Backend tests: PASSED"
+        echo "✅ Chrome extension build: PASSED"  
+        echo "✅ Security audit: PASSED"
+        echo "✅ Documentation: PASSED"
+        echo ""
+        echo "🚀 Ready for deployment!"

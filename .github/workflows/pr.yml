@@ -1,0 +1,199 @@
+name: 🔍 Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # PR情報検証
+  pr-validation:
+    name: 📋 PR Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 📊 PR Stats
+      run: |
+        echo "📋 Pull Request Information:"
+        echo "Title: ${{ github.event.pull_request.title }}"
+        echo "Author: ${{ github.event.pull_request.user.login }}"
+        echo "Base: ${{ github.event.pull_request.base.ref }}"
+        echo "Head: ${{ github.event.pull_request.head.ref }}"
+        echo ""
+        
+        # 変更ファイル数をカウント
+        changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | wc -l)
+        echo "📁 Changed files: $changed_files"
+        
+        # 変更行数をカウント
+        additions=$(git diff --numstat ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | awk '{sum += $1} END {print sum}')
+        deletions=$(git diff --numstat ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | awk '{sum += $2} END {print sum}')
+        echo "➕ Additions: ${additions:-0}"
+        echo "➖ Deletions: ${deletions:-0}"
+
+  # 変更差分テスト
+  diff-tests:
+    name: 🔬 Differential Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: 📦 Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: latest
+        
+    - name: 🧪 Run tests on changed backend files
+      run: |
+        # バックエンドファイルが変更された場合のみテスト実行
+        if git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -q "^backend/"; then
+          echo "🔧 Backend files changed, running tests..."
+          cd backend
+          pnpm install --frozen-lockfile
+          pnpm test --run
+        else
+          echo "ℹ️ No backend changes detected, skipping backend tests"
+        fi
+        
+    - name: 🌐 Validate Chrome extension changes
+      run: |
+        # Chrome拡張機能ファイルが変更された場合の検証
+        if git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -q "^chrome-extension/"; then
+          echo "🌐 Chrome extension files changed, validating..."
+          cd chrome-extension
+          
+          # manifest.jsonの検証
+          if [ -f "manifest.json" ]; then
+            node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8'))"
+            echo "✅ manifest.json is valid"
+          fi
+          
+          # 必須ファイルの存在確認
+          required_files=("content.js" "popup.js" "background.js")
+          for file in "${required_files[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ $file exists"
+            else
+              echo "❌ Missing required file: $file"
+              exit 1
+            fi
+          done
+        else
+          echo "ℹ️ No Chrome extension changes detected"
+        fi
+
+  # コード品質チェック
+  code-quality:
+    name: 📏 Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 📊 Code complexity analysis
+      run: |
+        echo "📊 Analyzing code complexity..."
+        
+        # JavaScriptファイルの行数チェック
+        find . -name "*.js" -not -path "./node_modules/*" -not -path "./.git/*" | while read file; do
+          lines=$(wc -l < "$file")
+          if [ $lines -gt 500 ]; then
+            echo "⚠️ Large file detected: $file ($lines lines)"
+          else
+            echo "✅ $file ($lines lines)"
+          fi
+        done
+        
+        # TypeScriptファイルの行数チェック  
+        find . -name "*.ts" -not -path "./node_modules/*" -not -path "./.git/*" | while read file; do
+          lines=$(wc -l < "$file")
+          if [ $lines -gt 500 ]; then
+            echo "⚠️ Large file detected: $file ($lines lines)"
+          else
+            echo "✅ $file ($lines lines)"
+          fi
+        done
+
+  # PR自動ラベル
+  auto-label:
+    name: 🏷️ Auto Label
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 🏷️ Add labels based on changes
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { context } = require('@actions/github');
+          const { execSync } = require('child_process');
+          
+          // 変更されたファイルを取得
+          const changedFiles = execSync(
+            `git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}`,
+            { encoding: 'utf8' }
+          ).split('\n').filter(Boolean);
+          
+          const labels = [];
+          
+          // ファイルパスに基づいてラベルを決定
+          if (changedFiles.some(file => file.startsWith('backend/'))) {
+            labels.push('backend');
+          }
+          if (changedFiles.some(file => file.startsWith('chrome-extension/'))) {
+            labels.push('chrome-extension');
+          }
+          if (changedFiles.some(file => file.includes('test'))) {
+            labels.push('tests');
+          }
+          if (changedFiles.some(file => file.endsWith('.md'))) {
+            labels.push('documentation');
+          }
+          if (changedFiles.some(file => file.includes('.github/workflows'))) {
+            labels.push('ci/cd');
+          }
+          
+          // サイズに基づくラベル
+          const totalChanges = changedFiles.length;
+          if (totalChanges > 20) {
+            labels.push('size/large');
+          } else if (totalChanges > 5) {
+            labels.push('size/medium');
+          } else {
+            labels.push('size/small');
+          }
+          
+          // ラベルを追加
+          if (labels.length > 0) {
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: labels
+            });
+            
+            console.log(`Added labels: ${labels.join(', ')}`);
+          }
