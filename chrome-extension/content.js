@@ -38,24 +38,26 @@ class ChatEmotionAnalyzer {
     console.log('✅ 初期化完了 - observer:', typeof this.observer);
   }
 
-  // New chatボタンコンテナから既存の感情アイコンを削除
+  // New chatボタンコンテナから既存の感情アイコンを削除（精密化）
   cleanupNewChatButtons() {
-    console.log('🧹 New chatボタンコンテナのクリーンアップを開始');
+    console.log('🧹 New chatボタンコンテナのクリーンアップを開始（精密版）');
     
-    // KF64heコントローラーを持つ要素を検索
-    const newChatContainers = document.querySelectorAll('[jscontroller="KF64he"]');
+    // より精密な検索: 真のNew Chatボタンコンテナのみ対象
+    const potentialContainers = document.querySelectorAll('[jscontroller="KF64he"]');
+    let cleanedCount = 0;
     
-    newChatContainers.forEach(container => {
+    potentialContainers.forEach(container => {
       if (this.isNewChatButton(container)) {
         const existingIcons = container.querySelectorAll('.emotion-analyzer-icon');
         if (existingIcons.length > 0) {
-          console.log(`🗑️ New chatボタンコンテナから${existingIcons.length}個の感情アイコンを削除`);
+          console.log(`🗑️ 真のNew chatボタンコンテナから${existingIcons.length}個の感情アイコンを削除`);
           existingIcons.forEach(icon => icon.remove());
+          cleanedCount += existingIcons.length;
         }
       }
     });
     
-    console.log('✅ New chatボタンコンテナのクリーンアップ完了');
+    console.log(`✅ New chatボタンコンテナのクリーンアップ完了 (${cleanedCount}個削除)`);
   }
 
   // DOM構造をデバッグ調査
@@ -405,7 +407,7 @@ class ChatEmotionAnalyzer {
     }
   }
 
-  // "New chat"ボタンコンテナの特定検出
+  // "New chat"ボタンコンテナの特定検出（精密化）
   isNewChatButton(element) {
     if (!element) return false;
     
@@ -422,29 +424,46 @@ class ChatEmotionAnalyzer {
       return true;
     }
     
-    // 2. New chatボタンコンテナの検出（最重要！）
-    if (jscontroller === 'KF64he' && element.querySelector('[jsname="V67aGc"]')) {
-      console.log('🎯 New chatボタンコンテナを検出 (KF64he + V67aGc child)');
-      return true;
-    }
-    
-    // 3. "New chat"テキストを含む要素の親コンテナ検出
-    if (element.querySelector('.T57Ued-nBWOSb') || 
-        element.querySelector('span[jsname="V67aGc"]')) {
-      console.log('🎯 New chatボタンの親コンテナを検出');
-      return true;
-    }
-    
-    // 4. 子要素に"New chat"テキストがある場合
-    const newChatSpans = element.querySelectorAll('span');
-    for (const span of newChatSpans) {
-      if (span.textContent?.trim().toLowerCase() === 'new chat') {
-        console.log('🎯 New chatテキストの親コンテナを検出');
+    // 2. New chatボタンコンテナの精密検出（厳格化）
+    if (jscontroller === 'KF64he') {
+      const newChatSpan = element.querySelector('span[jsname="V67aGc"]');
+      const newChatButton = element.querySelector('button[jsname="TrXBg"]');
+      const dataIsFab = element.querySelector('[data-is-fab="true"]');
+      
+      // より厳密な条件: 複数の特徴が揃った場合のみNew Chatボタンと判定
+      if (newChatSpan && newChatButton && dataIsFab && 
+          newChatSpan.textContent?.trim().toLowerCase() === 'new chat') {
+        console.log('🎯 New chatボタンコンテナを精密検出 (厳格条件)');
         return true;
       }
     }
     
-    // 5. 従来の親要素からの検出
+    // 3. "New chat"テキストを含む要素の親コンテナ検出（条件追加）
+    const newChatTextSpan = element.querySelector('.T57Ued-nBWOSb');
+    if (newChatTextSpan && newChatTextSpan.textContent?.trim().toLowerCase() === 'new chat') {
+      // さらに、FABボタンの特徴があることを確認
+      const fabButton = element.querySelector('[data-is-fab="true"]');
+      if (fabButton) {
+        console.log('🎯 New chatボタンの親コンテナを精密検出');
+        return true;
+      }
+    }
+    
+    // 4. 子要素に"New chat"テキストがある場合（条件強化）
+    const newChatSpans = element.querySelectorAll('span');
+    for (const span of newChatSpans) {
+      if (span.textContent?.trim().toLowerCase() === 'new chat') {
+        // New chatテキストがあっても、FABボタンの特徴がない場合は除外しない
+        const parentContainer = span.closest('[jscontroller="KF64he"]');
+        const hasFabFeatures = parentContainer?.querySelector('[data-is-fab="true"]');
+        if (hasFabFeatures) {
+          console.log('🎯 New chatテキストの親コンテナを精密検出');
+          return true;
+        }
+      }
+    }
+    
+    // 5. 従来の親要素からの検出（変更なし）
     if (element.closest('[jsname="V67aGc"]') ||
         element.closest('.T57Ued-nBWOSb') ||
         element.closest('button')?.textContent?.trim().toLowerCase() === 'new chat') {
