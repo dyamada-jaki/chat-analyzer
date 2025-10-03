@@ -24,7 +24,7 @@
     "@types/ws": "^8.5.12",
     "tsx": "^4.19.0",
     "typescript": "^5.5.4",
-    "vitest": "^2.0.5",
+    "vitest": "^3.2.4",
     "supertest": "^7.0.0",
     "@types/supertest": "^6.0.2"
   }
