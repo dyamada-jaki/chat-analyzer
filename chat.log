@@ -1948,3 +1948,60 @@ const iconElement = document.createElement('span');
 
 **これでリンクやその他の要素を含む複雑なメッセージでも、感情アイコンが適切な位置に安定して表示されます！** 🎯✨🎉
 
+[User]: いったん、これで進めましょう
+
+[Assistant]: 承知いたしました！Chrome拡張機能が完全に動作可能な状態で進行継続です。
+
+[User]: 感情分析を、ちゃんとしたAIで実施したい
+
+[Assistant]: ## 🤖 **本格的AI感情分析の実装！**
+
+### **🎯 現状から高度AI感情分析への進化:**
+
+#### **現在の分析方式:**
+- **キーワード方式**: 単純な感情語彙マッチング
+- **パターン方式**: 基本的な正規表現パターン
+- **精度**: 限定的（基本的な感情のみ検出）
+
+#### **高度AI感情分析オプション:**
+
+### **🚀 推奨実装方式:**
+
+#### **Option A: Google Gemini API統合 (推奨)**
+- **API**: Google AI Generative Language API
+- **モデル**: Gemini Pro (日本語感情分析に優秀)
+- **利点**: 高精度、文脈理解、ニュアンス検出
+- **コスト**: リーズナブル（既にバックエンドに統合済み）
+
+#### **Option B: OpenAI GPT API**
+- **API**: OpenAI GPT-4/3.5-turbo
+- **利点**: 非常に高精度、詳細な感情分析
+- **コスト**: やや高め
+
+#### **Option C: ローカルAI (Transformers.js)**
+- **実装**: ブラウザ内AI処理
+- **利点**: プライバシー保護、コストゼロ
+- **制限**: 処理速度、精度やや劣る
+
+[User]: 実はチャットのテキストに感情が出るように戻った時にまた余計な場所に感情が出るようになりました。汎用的な修正ではなく、この箇所限定で出なくすることはできますか？
+
+```html
+<div jsaction="keydown:mAamLc;JIbuQc:fbryk;wjPeV:cB33x;Ljnxzf:fbryk;xcBozd:aNdshc" jscontroller="KF64he" jslog="247721; track:click,keyboard_enter,keypress,impression"><div class="pnsM6e"><span class="VpAp7d" data-is-tooltip-wrapper="true"><button class="T57Ued-BIzmGd T57Ued-BIzmGd-OWXEXe-X9G3K T2watc rxohvc slSulf pDfpbf jVwmLb" jscontroller="IUkCmb" jsname="TrXBg" jsaction="click:h5M12e;clickmod:h5M12e;pointerdown:FEiYhc;pointerup:mF5Elf;pointerenter:EX0mI;pointerleave:vpvbp;pointercancel:xyn4sd;contextmenu:xexox;focus:h06R8;blur:zjh6rb;transitionend:e204de;" data-idom-class="slSulf pDfpbf jVwmLb" data-tooltip-id="ucc-14" data-is-fab="true" data-is-extended="true"><span class="SXdXAb-BFbNVe"><span class="SXdXAb-ugnUJb"></span></span><span class="RBHQF-ksKsZd" jscontroller="LBaJxb" jsname="m9ZlFb" soy-skip="" ssk="6:RWVI5c"></span><span class="OiePBf-zPjgPe"></span><span class="T57Ued-Q0XOV" jsname="ENL0A" aria-hidden="true"><div class="G01np"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="currentColor"><path d="M3 20V5q0-.825.587-1.413Q4.175 3 5 3h12q.825 0 1.413.587Q19 4.175 19 5v5.075q-.25-.05-.5-.063Q18.25 10 18 10t-.5.012q-.25.013-.5.063V5H5v10h7.075q-.05.25-.063.5-.012.25-.012.5t.012.5q.013.25.063.5H6ZM7 9h8V7H7Zm0 4h5v-2H7Zm10 7v-3h-3v-2h3v-3h2v3h3v2h-3v3ZM5 15V5v10Z"></path></svg></div></span><span class="T57Ued-nBWOSb" jsname="V67aGc">New chat</span></button><div class="ne2Ple-oshW8e-V67aGc" id="ucc-14" role="tooltip" aria-hidden="true">New chat</div></span></div><span class="emotion-analyzer-icon">
+      <span class="emotion-icon-container" style="...">😐 60%</span>
+    </span></div>
+```
+
+[Assistant]: ## 🎯 **"New chat"ボタン限定除外の精密実装**
+
+### **🔍 問題の特定:**
+
+**"New chat"ボタンに感情アイコンが表示される問題を限定的に解決します！**
+
+#### **特定要素の識別:**
+- **ボタンテキスト**: `"New chat"`
+- **特定クラス**: `T57Ued-nBWOSb`
+- **jsname**: `V67aGc`
+- **data-is-fab**: `true`
+
+### **🛠️ 精密除外実装:**
+

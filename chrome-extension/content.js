@@ -382,6 +382,33 @@ class ChatEmotionAnalyzer {
     }
   }
 
+  // "New chat"ボタンの特定検出
+  isNewChatButton(element) {
+    if (!element) return false;
+    
+    const textContent = element.textContent?.trim().toLowerCase() || '';
+    const jsname = element.getAttribute('jsname') || '';
+    const elementClasses = this.getElementClasses(element);
+    
+    // "New chat"ボタンの特定条件
+    if (textContent === 'new chat' || 
+        jsname === 'V67aGc' || 
+        elementClasses.includes('T57Ued-nBWOSb')) {
+      console.log('🎯 New chatボタンを特定検出:', element.textContent?.trim());
+      return true;
+    }
+    
+    // 親要素からの検出
+    if (element.closest('[jsname="V67aGc"]') ||
+        element.closest('.T57Ued-nBWOSb') ||
+        element.closest('button')?.textContent?.trim().toLowerCase() === 'new chat') {
+      console.log('🎯 New chatボタンの子要素を検出');
+      return true;
+    }
+    
+    return false;
+  }
+
   // Google UI要素かどうかを判定
   isGoogleUIElement(element) {
     if (!element) return false;
@@ -389,6 +416,12 @@ class ChatEmotionAnalyzer {
     try {
       if (this.isDefinitelyMessageElement(element)) {
         return false;
+      }
+
+      // New chatボタンの特定除外
+      if (this.isNewChatButton(element)) {
+        console.log('🚫 New chatボタンを特定除外');
+        return true;
       }
     
       const googleClassPatterns = [
