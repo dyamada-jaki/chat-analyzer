@@ -2081,3 +2081,74 @@ if (this.isNewChatButton(element)) {
 
 ### **🛠️ 修正戦略:**
 
+## ✅ **構造レベル完全解決実装: 77eb4de**
+
+### **🎯 根本原因の特定と解決:**
+
+#### **HTML構造の詳細分析:**
+```html
+<div jscontroller="KF64he" ...> ← 感情アイコンが挿入される最上位DIV
+  <div class="pnsM6e">
+    <span class="VpAp7d">
+      <button jsname="TrXBg" ...>
+        <span jsname="V67aGc">New chat</span> ← 検出対象
+      </button>
+    </span>
+  </div>
+  <span class="emotion-analyzer-icon">😐 60%</span> ← 問題の感情アイコン
+</div>
+```
+
+#### **問題の本質:**
+- **挿入レベル**: 最上位DIV (`jscontroller="KF64he"`)
+- **検出対象**: 内部のbutton要素 (`jsname="V67aGc"`)
+- **従来の問題**: コンテナレベルでの検出不足
+
+### **🛠️ 実装した完全解決策:**
+
+#### **1. 5段階検出ロジック:**
+```javascript
+// isNewChatButton() - 包括的検出
+1. 直接検出: textContent, jsname, class
+2. コンテナ検出: jscontroller="KF64he" + V67aGc子要素
+3. 親検出: querySelector による子要素検索  
+4. テキスト検出: span要素内容の走査
+5. 階層検出: closest() による親要素検出
+```
+
+#### **2. 多段階防御機構:**
+```javascript
+// 挿入拒否 (insertEmotionIcon内)
+if (this.isNewChatButton(messageContainer)) {
+  console.log('🚫 New chatボタンコンテナのため感情アイコン挿入を拒否');
+  // 既存アイコンも削除
+  existingIcons.forEach(icon => icon.remove());
+  return;
+}
+```
+
+#### **3. 初期化クリーンアップ:**
+```javascript
+// cleanupNewChatButtons() - 起動時全体清掃
+cleanupNewChatButtons() {
+  const newChatContainers = document.querySelectorAll('[jscontroller="KF64he"]');
+  // 全てのNew chatボタンコンテナから既存アイコンを削除
+}
+```
+
+### **🚀 達成された完全性:**
+
+#### **完全除外の3つの防御線:**
+- **✅ 事前検出**: コンテナレベル包括検証
+- **✅ 挿入拒否**: New chatボタンコンテナへの挿入阻止  
+- **✅ 既存削除**: 残存アイコンの完全除去
+- **✅ 初期化清掃**: 起動時の全体クリーンアップ
+
+#### **技術的精密性:**
+- **構造理解**: HTML構造の完全把握
+- **レベル別対応**: 各DOMレベルでの適切な処理
+- **予防的設計**: 複数の防御メカニズム
+- **確実性**: ログによる動作確認
+
+**これで"New chat"ボタンへの感情アイコン表示問題が構造レベルで完全に解決されました！** 🎯✨🎉
+
