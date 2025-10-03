@@ -4,8 +4,6 @@ import { createServer } from 'http';
 import { WebSocketManager } from './services/websocketManager.js';
 import webhookRoutes, { setWebSocketManager } from './routes/webhook.js';
 import apiRoutes from './routes/api.js';
-import authRoutes from './routes/auth.js';
-import chatSpacesRoutes from './routes/chat-spaces.js';
 
 // Express アプリケーションを作成
 const app = express();
@@ -35,8 +33,6 @@ app.use((req, res, next) => {
 
 // ルートの設定
 app.use('/api/webhook', webhookRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatSpacesRoutes);
 app.use('/api', apiRoutes);
 
 // ルートエンドポイント
