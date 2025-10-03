@@ -2247,3 +2247,59 @@ if (jscontroller === 'KF64he' && element.querySelector('[jsname="V67aGc"]')) {
 - 元の問題（New Chatボタンへのアイコン表示）は確実に防止
 - 正常メッセージの除外は解除
 
+## ✅ **精密修正完了: bd96717**
+
+### **🎯 実装した精密化修正:**
+
+#### **1. `isNewChatButton`の条件精密化:**
+```javascript
+// 修正前: 広すぎる条件
+if (jscontroller === 'KF64he' && element.querySelector('[jsname="V67aGc"]')) {
+  return true; // 正常メッセージも除外してしまう
+}
+
+// 修正後: 複合条件による精密検出
+if (jscontroller === 'KF64he') {
+  const newChatSpan = element.querySelector('span[jsname="V67aGc"]');
+  const newChatButton = element.querySelector('button[jsname="TrXBg"]');
+  const dataIsFab = element.querySelector('[data-is-fab="true"]');
+  
+  // 3つの特徴が全て揃った場合のみNew Chatボタンと判定
+  if (newChatSpan && newChatButton && dataIsFab && 
+      newChatSpan.textContent?.trim().toLowerCase() === 'new chat') {
+    return true;
+  }
+}
+```
+
+#### **2. FAB特徴による確実な識別:**
+- **`data-is-fab="true"`**: 真のNew ChatボタンのFAB（Floating Action Button）特徴
+- **複合確認**: テキスト + ボタン + FAB属性の3要素確認
+- **誤認識防止**: 正常メッセージコンテナの除外回避
+
+#### **3. 段階的検証の追加:**
+- **条件1**: 直接検出（変更なし）
+- **条件2**: 精密コンテナ検出（**厳格化**）
+- **条件3**: FAB特徴確認（**新規追加**）
+- **条件4**: 強化親検出（**条件追加**）
+- **条件5**: 従来検出（変更なし）
+
+### **🚀 達成された完璧なバランス:**
+
+#### **New Chatボタン除外の確実性維持:**
+- **✅ 真のNew Chatボタン**: 確実に検出・除外
+- **✅ FAB特徴確認**: data-is-fab属性による精密識別
+- **✅ 複合条件**: 3要素の組み合わせ確認
+
+#### **既存メッセージ表示の復活:**
+- **✅ 誤認識解除**: 正常メッセージコンテナの適切な処理
+- **✅ チャット切り替え**: 既存メッセージへの感情アイコン表示復活
+- **✅ 機能性回復**: processExistingMessages()の正常動作
+
+#### **技術的精密性:**
+- **複合検証**: 単一条件から複数特徴の組み合わせ
+- **FAB識別**: data-is-fab属性による確実な判別
+- **ログ強化**: より詳細な処理状況の可視化
+
+**これでNew Chatボタンへのアイコン表示は確実に防止しつつ、チャット切り替え時の既存メッセージへの感情アイコン表示が復活します！** 🎯✨🎉
+
