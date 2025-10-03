@@ -4,8 +4,8 @@ import { OAuth2Client } from 'google-auth-library';
 const router: Router = Router();
 
 // Google OAuth設定
-const GOOGLE_CLIENT_ID = '55163924640-q2se3apg7cgig7ob7as6622gltr3r8fa.apps.googleusercontent.com';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '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';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5175';
 const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI);
 
