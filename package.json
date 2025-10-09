@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Google Chat感情分析Chrome拡張機能",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sonar:start": "./scripts/sonarqube.sh start",
+    "sonar:stop": "./scripts/sonarqube.sh stop",
+    "sonar:scan": "sonar-scanner",
+    "sonar:setup": "echo 'SonarQube Setup Guide: docs/SONARQUBE_SETUP.md'"
   },
   "keywords": ["chrome-extension", "google-chat", "emotion-analysis", "ai"],
   "author": "dyamada-jaki",

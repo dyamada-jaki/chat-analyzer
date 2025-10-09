@@ -108,3 +108,9 @@ GOOGLE_CLIENT_SECRET
 # Development tools
 .vite/
 .cache/
+
+# SonarQube
+.sonar/
+.scannerwork/
+sonar-scanner.properties
+sonar-report.json

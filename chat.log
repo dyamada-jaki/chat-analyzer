@@ -68,4 +68,82 @@
 - chat.log記録フォーマット: TDD専用テンプレート追加
 - 品質保証: 全機能にテストカバレッジ必須
 
+## 🚀 新機能追加: APIクォータ制御 (TDD後追い適用)
+
+### 1️⃣ ユースケース追加
+- docs/docs/USECASE_DIAGRAMS.md: UC-004 APIクォータ制御フローを追加
+- システム概要図: UC4[UC-004: APIクォータ制御]を追加
+- フローチャート: 日間・月間制限チェック → フォールバック分岐を図式化
+
+### 2️⃣ テストコード作成 (Red → Green)
+- backend/tests/quotaControl.test.ts: 10テストケース作成
+- 初期テスト結果: 1テスト失敗 (console.errorモック不足)
+- 修正後テスト結果: ✅ 10テスト全成功
+
+### 3️⃣ プロダクトコード実装 (既存)
+- backend/src/services/emotionAnalyzer.ts: 既に実装済み
+- クォータ管理機能: canMakeRequest(), updateQuotaCount(), getQuotaInfo()
+- 自動フォールバック: 制限超過時にanalyzeEmotionSimple()使用
+
+### 4️⃣ 全テスト実行
+- 実行コマンド: pnpm test --run
+- 結果: 33テスト全通過 (4ファイル, 既存テスト含む)
+- 回帰テスト: 既存機能に影響なし
+
+### 5️⃣ リファクタリング (Refactor)
+- テストコード: console.errorモック追加で安定化
+- 既存コード: 変更なし（既に実装完了済み）
+
+### 🎯 TDD完了
+- 機能: Gemini APIクォータ制御 (日間50、月間1400制限)
+- テストカバレッジ: 10テストケース (制限チェック、フォールバック、使用量管理)
+- 品質保証: 制限超過時の安全動作確認済み
+
+## 🔍 SonarQube Docker環境セットアップ (2025-10-09)
+
+### 📦 構成ファイル作成
+- docker-compose.sonarqube.yml: SonarQube + PostgreSQL構成
+- sonar-project.properties: プロジェクト解析設定
+- scripts/sonarqube.sh: 起動・停止管理スクリプト
+- docs/SONARQUBE_SETUP.md: セットアップガイド
+
+### 🐳 Docker構成
+- SonarQube: 10.4-community (ポート: 9000)
+- PostgreSQL: 15-alpine (データベース)
+- 永続化: データ、拡張機能、ログをボリューム管理
+- ネットワーク: 専用bridge network
+
+### ⚙️ プロジェクト設定
+- 解析対象: chrome-extension/, backend/src/
+- テスト対象: backend/tests/
+- 除外: node_modules, dist, build, coverage
+- カバレッジ: LCOV形式サポート
+
+### 🚀 使用方法
+```bash
+# Docker Desktop起動後
+npm run sonar:start    # SonarQube起動
+npm run sonar:scan     # コード解析実行
+npm run sonar:stop     # SonarQube停止
+```
+
+### 📋 セットアップ手順
+1. Docker Desktop起動 (必須)
+2. SonarQube起動: `npm run sonar:start`
+3. http://localhost:9000 アクセス
+4. 初期ログイン: admin/admin
+5. パスワード変更・プロジェクト作成
+6. 認証トークン生成・設定
+7. コード解析実行: `npm run sonar:scan`
+
+### 🛠️ 統合準備
+- .gitignore: SonarQube作業ディレクトリ除外
+- package.json: 管理スクリプト追加
+- 品質ゲート: 自動品質チェック設定
+
+### ⚠️ 注意事項
+- Docker Desktop起動が必須
+- 初回起動時はデータベース初期化で時間要
+- ポート9000が使用中の場合はポート変更必要
+
 === セッション進行中 ===
