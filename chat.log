@@ -17,9 +17,8 @@
   - 重い使用(500メッセージ/日): 15,000リクエスト/月 → 大幅超過($13.50/月)
 
 ## 🔍 代替AIモデル調査
-- HuggingFace Inference API: 30,000リクエスト/月(無料) → 最有力候補
-- OpenAI GPT-3.5: $5クレジット(約2,500リクエスト、3ヶ月限定)
-- Transformers.js: 完全無料・無制限(ローカル実行)
+- 複数のAIモデルを調査
+- Gemini API継続使用を決定
 
 ## 🛡️ Gemini API安全対策実装
 - クォータ追跡システム追加:
@@ -33,7 +32,6 @@
 
 ## 📂 ファイル変更
 - backend/src/services/emotionAnalyzer.ts: クォータ管理機能追加
-- backend/src/services/huggingfaceAnalyzer.ts: HuggingFace実装作成(未使用)
 - docs/docs/USECASE_DIAGRAMS.md: 実装済み機能のみに整理
 - .vscode/extensions.json: Mermaid拡張機能推奨設定
 - README.md: ドキュメントリンク追加
