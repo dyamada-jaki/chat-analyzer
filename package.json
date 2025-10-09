@@ -7,7 +7,9 @@
     "sonar:start": "./scripts/sonarqube.sh start",
     "sonar:stop": "./scripts/sonarqube.sh stop",
     "sonar:scan": "sonar-scanner",
-    "sonar:setup": "echo 'SonarQube Setup Guide: docs/SONARQUBE_SETUP.md'"
+    "sonar:setup": "echo 'SonarQube Setup Guide: docs/SONARQUBE_SETUP.md'",
+    "test:coverage": "cd backend && pnpm test:coverage",
+    "analyze:full": "./scripts/test-and-analyze.sh"
   },
   "keywords": ["chrome-extension", "google-chat", "emotion-analysis", "ai"],
   "author": "dyamada-jaki",

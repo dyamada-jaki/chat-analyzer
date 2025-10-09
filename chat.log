@@ -203,4 +203,51 @@ npm run sonar:stop     # SonarQube停止
 - 信頼性: バグ、コードスメル
 - カバレッジ: テストカバレッジ率 (要設定)
 
+## 🧪 テストカバレッジ統合完了 (2025-10-09)
+
+### 📊 Vitestカバレッジ設定
+- @vitest/coverage-v8: v8カバレッジプロバイダー追加
+- backend/vitest.config.ts: カバレッジ設定追加
+  - レポート形式: text, json, html, lcov
+  - 出力先: backend/coverage/
+  - カバレッジ閾値: 80% (branches, functions, lines, statements)
+  - 除外設定: node_modules, dist, tests, *.d.ts
+
+### 🔗 SonarQube統合
+- sonar-project.properties: LCOVパス設定
+- シンボリックリンク: coverage-lcov.info → backend/coverage/lcov.info
+- SonarQube認識成功: "Analysing [coverage-lcov.info]"
+
+### 📈 現在のカバレッジ状況
+- 全体カバレッジ: 47.03%
+- EmotionAnalyzer: 92.59% (優秀)
+- MessageStore: 80.7% (良好)  
+- Webhook: 85.41% (良好)
+- 未カバー: index.ts (0%), api.ts (0%), websocketManager.ts (0%)
+
+### 🚀 自動化スクリプト
+- scripts/test-and-analyze.sh: テスト→カバレッジ→SonarQube解析の自動化
+- package.json: 便利コマンド追加
+  - npm run test:coverage: バックエンドカバレッジ付きテスト
+  - npm run analyze:full: 統合解析スクリプト
+
+### 📋 使用方法
+```bash
+# カバレッジ付きテスト実行
+npm run test:coverage
+
+# カバレッジ付きSonarQube解析（統合）
+npm run analyze:full
+
+# 手動SonarQube解析
+JAVA_HOME=/usr/local/Cellar/openjdk/25 sonar-scanner
+```
+
+### 🎯 SonarQubeダッシュボード表示項目
+- コード品質メトリクス
+- セキュリティ脆弱性
+- テストカバレッジ率 ✅ (統合完了)
+- 重複コード検出
+- 複雑度分析
+
 === セッション進行中 ===
