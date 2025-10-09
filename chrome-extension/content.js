@@ -600,7 +600,7 @@ class ChatEmotionAnalyzer {
     
     const systemPatterns = [
       /^You$/i, /^今$/, /^\d+\s*(分|時間|秒)$/, /^Now$/i,
-      /^午前|午後/, /^\d{1,2}:\d{2}$/, /^\.\.\.$/, /^読み込み中/,
+      /^(午前|午後)/, /^\d{1,2}:\d{2}$/, /^\.\.\.$/, /^読み込み中/,
       /^Loading/i, /^This is taking longer/i, /^Edit message$/i,
       /^Reply in thread$/i, /^リアクションを追加$/
     ];
@@ -620,7 +620,30 @@ class ChatEmotionAnalyzer {
       elementTag: messageElement.tagName
     });
     
-    let content = '';
+    // メッセージ内容を取得
+    const content = this.extractMessageContent(messageElement);
+    
+    // 送信者名を取得
+    const userName = this.extractUserName(messageElement);
+    
+    // タイムスタンプを取得
+    const timeData = this.extractTimeData(messageElement);
+    
+    // 代替手段での取得
+    const fallbackData = this.extractFallbackData(messageElement, content, userName);
+    
+    return {
+      messageId,
+      userId,
+      userName: fallbackData.userName,
+      content: fallbackData.content,
+      timeText: timeData.timeText,
+      timestamp: timeData.timestamp
+    };
+  }
+
+  // メッセージ内容の抽出
+  extractMessageContent(messageElement) {
     const contentSelectors = [
       'div[jsname="bgckF"].DTp27d.QIJiHb',
       '.DTp27d.QIJiHb',
@@ -634,12 +657,17 @@ class ChatEmotionAnalyzer {
     for (const selector of contentSelectors) {
       const contentElement = messageElement.querySelector(selector);
       if (contentElement && contentElement.textContent.trim()) {
-        content = contentElement.textContent.trim();
+        const content = contentElement.textContent.trim();
         console.log(`✅ メッセージ内容を取得 (${selector}):`, content.substring(0, 50));
-        break;
+        return content;
       }
     }
     
+    return '';
+  }
+
+  // 送信者名の抽出
+  extractUserName(messageElement) {
     let userName = messageElement.getAttribute('data-name') || '';
     
     if (!userName) {
@@ -664,31 +692,38 @@ class ChatEmotionAnalyzer {
       console.log(`✅ 送信者名を取得 (data-name):`, userName);
     }
     
+    return userName;
+  }
+
+  // タイムスタンプデータの抽出
+  extractTimeData(messageElement) {
     const timeElement = messageElement.querySelector('.FvYVyf') || 
                        messageElement.querySelector('[data-absolute-timestamp]') ||
                        messageElement.querySelector('.timestamp');
     const timeText = timeElement ? timeElement.textContent.trim() : '';
     const timestamp = timeElement ? timeElement.getAttribute('data-absolute-timestamp') : '';
     
+    return {
+      timeText,
+      timestamp: timestamp ? parseInt(timestamp) : Date.now()
+    };
+  }
+
+  // 代替手段でのデータ抽出
+  extractFallbackData(messageElement, content, userName) {
     if (!content && !userName) {
       console.log('⚠️ 標準セレクタで取得失敗、代替手段を試行');
       
       const allText = messageElement.textContent || '';
       if (allText.length > 10) {
-        content = allText.substring(0, 200);
-        userName = 'Unknown User';
-        console.log('🔄 代替抽出:', { content: content.substring(0, 50), userName });
+        const fallbackContent = allText.substring(0, 200);
+        const fallbackUserName = 'Unknown User';
+        console.log('🔄 代替抽出:', { content: fallbackContent.substring(0, 50), userName: fallbackUserName });
+        return { content: fallbackContent, userName: fallbackUserName };
       }
     }
     
-    return {
-      messageId,
-      userId,
-      userName,
-      content,
-      timeText,
-      timestamp: timestamp ? parseInt(timestamp) : Date.now()
-    };
+    return { content, userName };
   }
 
   // 感情分析をバックエンドに依頼
