@@ -469,55 +469,91 @@ class ChatEmotionAnalyzer {
     }
   }
 
-  // "New chat"ボタンコンテナの特定検出（精密化）
+  // "New chat"ボタンコンテナの特定検出（Clean Code リファクタリング版）
   isNewChatButton(element) {
     if (!element) return false;
     
+    // 検出戦略を配列で管理（戦略パターン）
+    const detectionStrategies = [
+      this.detectDirectNewChatButton.bind(this),
+      this.detectNewChatContainer.bind(this),
+      this.detectNewChatParentContainer.bind(this),
+      this.detectNewChatChildElement.bind(this),
+      this.detectLegacyNewChatButton.bind(this)
+    ];
+    
+    // 各戦略を順次実行（早期リターン）
+    return detectionStrategies.some(strategy => strategy(element));
+  }
+
+  // 戦略1: 直接的な"New chat"ボタン要素の検出
+  detectDirectNewChatButton(element) {
     const textContent = element.textContent?.trim().toLowerCase() || '';
     const jsname = element.getAttribute('jsname') || '';
-    const jscontroller = element.getAttribute('jscontroller') || '';
     const elementClasses = this.getElementClasses(element);
     
-    // 1. 直接的な"New chat"ボタン要素の検出
-    if (textContent === 'new chat' || 
-        jsname === 'V67aGc' || 
-        elementClasses.includes('T57Ued-nBWOSb')) {
+    const isDirectButton = textContent === 'new chat' || 
+                          jsname === 'V67aGc' || 
+                          elementClasses.includes('T57Ued-nBWOSb');
+    
+    if (isDirectButton) {
       console.log('🎯 New chatボタンを直接検出:', element.textContent?.trim());
       return true;
     }
     
-    // 2. New chatボタンコンテナの精密検出（厳格化）
-    if (jscontroller === 'KF64he') {
-      const newChatSpan = element.querySelector('span[jsname="V67aGc"]');
-      const newChatButton = element.querySelector('button[jsname="TrXBg"]');
-      const dataIsFab = element.querySelector('[data-is-fab="true"]');
-      
-      // より厳密な条件: 複数の特徴が揃った場合のみNew Chatボタンと判定
-      if (newChatSpan && newChatButton && dataIsFab && 
-          newChatSpan.textContent?.trim().toLowerCase() === 'new chat') {
-        console.log('🎯 New chatボタンコンテナを精密検出 (厳格条件)');
-        return true;
-      }
+    return false;
+  }
+
+  // 戦略2: New chatボタンコンテナの精密検出
+  detectNewChatContainer(element) {
+    const jscontroller = element.getAttribute('jscontroller') || '';
+    
+    if (jscontroller !== 'KF64he') {
+      return false;
     }
     
-    // 3. "New chat"テキストを含む要素の親コンテナ検出（条件追加）
+    const newChatSpan = element.querySelector('span[jsname="V67aGc"]');
+    const newChatButton = element.querySelector('button[jsname="TrXBg"]');
+    const dataIsFab = element.querySelector('[data-is-fab="true"]');
+    
+    const hasAllRequiredElements = newChatSpan && newChatButton && dataIsFab;
+    const hasCorrectText = newChatSpan?.textContent?.trim().toLowerCase() === 'new chat';
+    
+    if (hasAllRequiredElements && hasCorrectText) {
+      console.log('🎯 New chatボタンコンテナを精密検出 (厳格条件)');
+      return true;
+    }
+    
+    return false;
+  }
+
+  // 戦略3: "New chat"テキストを含む要素の親コンテナ検出
+  detectNewChatParentContainer(element) {
     const newChatTextSpan = element.querySelector('.T57Ued-nBWOSb');
-    if (newChatTextSpan && newChatTextSpan.textContent?.trim().toLowerCase() === 'new chat') {
-      // さらに、FABボタンの特徴があることを確認
-      const fabButton = element.querySelector('[data-is-fab="true"]');
-      if (fabButton) {
-        console.log('🎯 New chatボタンの親コンテナを精密検出');
-        return true;
-      }
+    
+    if (!newChatTextSpan || newChatTextSpan.textContent?.trim().toLowerCase() !== 'new chat') {
+      return false;
     }
     
-    // 4. 子要素に"New chat"テキストがある場合（条件強化）
+    const fabButton = element.querySelector('[data-is-fab="true"]');
+    
+    if (fabButton) {
+      console.log('🎯 New chatボタンの親コンテナを精密検出');
+      return true;
+    }
+    
+    return false;
+  }
+
+  // 戦略4: 子要素に"New chat"テキストがある場合の検出
+  detectNewChatChildElement(element) {
     const newChatSpans = element.querySelectorAll('span');
+    
     for (const span of newChatSpans) {
       if (span.textContent?.trim().toLowerCase() === 'new chat') {
-        // New chatテキストがあっても、FABボタンの特徴がない場合は除外しない
         const parentContainer = span.closest('[jscontroller="KF64he"]');
         const hasFabFeatures = parentContainer?.querySelector('[data-is-fab="true"]');
+        
         if (hasFabFeatures) {
           console.log('🎯 New chatテキストの親コンテナを精密検出');
           return true;
@@ -525,10 +561,22 @@ class ChatEmotionAnalyzer {
       }
     }
     
-    // 5. 従来の親要素からの検出（変更なし）
-    if (element.closest('[jsname="V67aGc"]') ||
-        element.closest('.T57Ued-nBWOSb') ||
-        element.closest('button')?.textContent?.trim().toLowerCase() === 'new chat') {
+    return false;
+  }
+
+  // 戦略5: 従来の親要素からの検出（厳格化）
+  detectLegacyNewChatButton(element) {
+    // より厳格な条件: 単純なclosest()だけでは不十分
+    const hasNewChatParent = element.closest('[jsname="V67aGc"]') ||
+                            element.closest('.T57Ued-nBWOSb');
+    
+    const hasNewChatButtonParent = element.closest('button')?.textContent?.trim().toLowerCase() === 'new chat';
+    
+    // FABボタンの特徴も確認
+    const hasFabContext = element.closest('[data-is-fab="true"]') ||
+                         element.closest('[jscontroller="KF64he"]');
+    
+    if ((hasNewChatParent || hasNewChatButtonParent) && hasFabContext) {
       console.log('🎯 New chatボタンの子要素を検出');
       return true;
     }
