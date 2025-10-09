@@ -6,6 +6,10 @@
 ![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.15.0-brightgreen)
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue)
 
+## 📊 ドキュメント
+
+- **[ユースケース図](docs/USECASE_DIAGRAMS.md)**: Mermaid形式のシステム設計図・フロー図
+
 ## 🎯 概要
 
 Google Chat内でのメッセージをリアルタイムで感情分析し、各参加者の感情状態を視覚的に表示するアプリケーションです。

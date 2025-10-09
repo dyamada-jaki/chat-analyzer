@@ -7,10 +7,28 @@ import { ChatMessage, EmotionAnalysis, EmotionType } from '../types/index.js';
 export class EmotionAnalyzer {
   private genAI: GoogleGenerativeAI;
   private model: any;
+  private quotaTracker: {
+    dailyCount: number;
+    monthlyCount: number;
+    lastReset: string;
+    maxDaily: number;
+    maxMonthly: number;
+  };
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+    
+    // クォータ追跡の初期化
+    this.quotaTracker = {
+      dailyCount: 0,
+      monthlyCount: 0,
+      lastReset: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+      maxDaily: 50,  // 1日50リクエストまで（安全マージン）
+      maxMonthly: 1400  // 月間1400リクエストまで（安全マージン）
+    };
+    
+    this.loadQuotaFromStorage();
   }
 
   /**
@@ -20,6 +38,16 @@ export class EmotionAnalyzer {
    * @returns 感情分析結果
    */
   async analyzeEmotion(messages: ChatMessage[], targetUserId: string): Promise<EmotionAnalysis> {
+    // クォータチェック
+    if (!this.canMakeRequest()) {
+      console.warn('Gemini APIクォータ制限に達しました。フォールバック分析を使用します。');
+      const latestMessage = messages.filter(msg => msg.userId === targetUserId).pop();
+      if (latestMessage) {
+        return this.analyzeEmotionSimple(latestMessage.content);
+      }
+      return this.createNeutralEmotion();
+    }
+
     try {
       // 対象ユーザーのメッセージのみを抽出
       const userMessages = messages.filter(msg => msg.userId === targetUserId);
@@ -59,12 +87,73 @@ confidence: [0.0-1.0の数値]
       const response = await result.response;
       const text = response.text();
 
+      // 成功時のクォータ更新
+      this.updateQuotaCount();
+
       return this.parseAnalysisResult(text);
 
     } catch (error) {
       console.error('感情分析エラー:', error);
+      
+      // エラー時はフォールバック分析を使用
+      const latestMessage = messages.filter(msg => msg.userId === targetUserId).pop();
+      if (latestMessage) {
+        return this.analyzeEmotionSimple(latestMessage.content);
+      }
       return this.createNeutralEmotion();
     }
+  }
+
+  /**
+   * クォータ情報をストレージから読み込み
+   */
+  private loadQuotaFromStorage(): void {
+    // 簡易実装: メモリベース（実際の運用では永続化が必要）
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (this.quotaTracker.lastReset !== today) {
+      // 日が変わった場合はリセット
+      this.quotaTracker.dailyCount = 0;
+      this.quotaTracker.lastReset = today;
+    }
+  }
+
+  /**
+   * APIリクエストが可能かチェック
+   */
+  private canMakeRequest(): boolean {
+    this.loadQuotaFromStorage();
+    
+    return this.quotaTracker.dailyCount < this.quotaTracker.maxDaily &&
+           this.quotaTracker.monthlyCount < this.quotaTracker.maxMonthly;
+  }
+
+  /**
+   * クォータカウントを更新
+   */
+  private updateQuotaCount(): void {
+    this.quotaTracker.dailyCount++;
+    this.quotaTracker.monthlyCount++;
+    
+    console.log(`Gemini API使用量: 日間 ${this.quotaTracker.dailyCount}/${this.quotaTracker.maxDaily}, 月間 ${this.quotaTracker.monthlyCount}/${this.quotaTracker.maxMonthly}`);
+  }
+
+  /**
+   * クォータ情報を取得
+   */
+  getQuotaInfo(): any {
+    return {
+      daily: {
+        used: this.quotaTracker.dailyCount,
+        limit: this.quotaTracker.maxDaily,
+        remaining: this.quotaTracker.maxDaily - this.quotaTracker.dailyCount
+      },
+      monthly: {
+        used: this.quotaTracker.monthlyCount,
+        limit: this.quotaTracker.maxMonthly,
+        remaining: this.quotaTracker.maxMonthly - this.quotaTracker.monthlyCount
+      }
+    };
   }
 
   /**
