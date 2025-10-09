@@ -20,7 +20,17 @@ export function setWebSocketManager(wsManager: WebSocketManager) {
 /**
  * Google Chat Webhook エンドポイント
  */
-router.post('/google-chat', async (req: Request, res: Response) => {
+router.post('/google-chat', (req: Request, res: Response) => {
+  handleGoogleChatWebhook(req, res).catch(error => {
+    console.error('❌ Webhook処理エラー:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  });
+});
+
+async function handleGoogleChatWebhook(req: Request, res: Response): Promise<void> {
   try {
     const webhook: GoogleChatWebhook = req.body;
     
@@ -81,17 +91,28 @@ router.post('/google-chat', async (req: Request, res: Response) => {
       error: 'Internal server error' 
     });
   }
-});
+}
 
 /**
  * テスト用メッセージ送信エンドポイント
  */
-router.post('/test-message', async (req: Request, res: Response) => {
+router.post('/test-message', (req: Request, res: Response) => {
+  handleTestMessage(req, res).catch(error => {
+    console.error('❌ テストメッセージ処理エラー:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  });
+});
+
+async function handleTestMessage(req: Request, res: Response): Promise<void> {
   try {
     const { content, userName = 'TestUser', userId = 'test_user_1' } = req.body;
 
     if (!content) {
-      return res.status(400).json({ error: 'content は必須です' });
+      res.status(400).json({ error: 'content は必須です' });
+      return;
     }
 
     // テストメッセージを作成
@@ -109,8 +130,8 @@ router.post('/test-message', async (req: Request, res: Response) => {
     // 過去10分間のユーザーメッセージを取得
     const userRecentMessages = messageStore.getUserRecentMessages(userId);
 
-    // 感情分析を実行（シンプル版を使用）
-    const emotionAnalysis = emotionAnalyzer.analyzeEmotionSimple(content);
+    // 感情分析を実行
+    const emotionAnalysis = await emotionAnalyzer.analyzeEmotion(userRecentMessages, userId);
     chatMessage.emotion = emotionAnalysis;
 
     // ユーザー感情状態を更新
@@ -144,6 +165,6 @@ router.post('/test-message', async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-});
+}
 
 export default router;

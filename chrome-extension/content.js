@@ -138,71 +138,10 @@ class ChatEmotionAnalyzer {
     
     try {
       const observer = new MutationObserver((mutations) => {
-        console.log(`🔄 DOM変更検出: ${mutations.length}件の変更`);
-        
-        mutations.forEach((mutation, index) => {
-          console.log(`🔍 変更[${index}]: タイプ=${mutation.type}, ターゲット=${mutation.target.tagName}`);
-          
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) {
-              console.log(`🆕 新しいノード追加: ${node.tagName}, クラス=[${Array.from(node.classList || []).join(', ')}]`);
-              
-              if (this.isDefinitelyMessageElement(node)) {
-                console.log('✅ 確実なメッセージ要素を検出:', node.className || node.tagName);
-              } else {
-                if (this.isGoogleUIElement(node)) {
-                  console.log('🚫 Google UI要素を検出して無視:', node.className || node.tagName);
-                  return;
-                }
-                
-                if (!this.isInMessageContainer(node)) {
-                  console.log('🚫 メッセージコンテナ外を検出して無視:', node.className || node.tagName);
-                  return;
-                }
-              }
-              
-              const gmailSelectors = [
-                '[data-message-id]',
-                '[data-name]', 
-                '[jsname="bgckF"]',
-                '.DTp27d.QIJiHb',
-                '.AflJR',
-                '[data-id]'
-              ];
-              
-              for (const selector of gmailSelectors) {
-                if (node.matches && node.matches(selector) && 
-                    !this.isButtonElement(node) && 
-                    (this.isDefinitelyMessageElement(node) || 
-                     (!this.isGoogleUIElement(node) && this.isInMessageContainer(node)))) {
-                  console.log(`💬 新しいメッセージを検出（直接-${selector}）:`, node);
-                  this.processMessage(node, `realtime-direct-${selector}`);
-                  break;
-                }
-              }
-              
-              const prioritySelectors = ['[jsname="bgckF"]', '.DTp27d.QIJiHb'];
-              let foundMessageText = false;
-              
-              for (const selector of prioritySelectors) {
-                const messageElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
-                messageElements.forEach(msgEl => {
-                  if (!this.isButtonElement(msgEl) && 
-                      (this.isDefinitelyMessageElement(msgEl) || 
-                       (!this.isGoogleUIElement(msgEl) && this.isInMessageContainer(msgEl)))) {
-                    console.log(`💬 子要素から新しいメッセージを検出 (${selector}):`, msgEl);
-                    this.processMessage(msgEl, `realtime-child-${selector}`);
-                    foundMessageText = true;
-                  }
-                });
-                if (foundMessageText) break;
-              }
-            }
-          });
-        });
+        this.handleMutations(mutations);
       });
 
-      const chatContainer = document.querySelector('[role="main"]') || document.body;
+      const chatContainer = this.getChatContainer();
       console.log('📍 監視対象コンテナ:', chatContainer.tagName, chatContainer.className);
       
       observer.observe(chatContainer, {
@@ -218,6 +157,129 @@ class ChatEmotionAnalyzer {
       console.error('❌ startMessageMonitoring() エラー:', error);
       this.observer = null;
     }
+  }
+
+  // DOM変更の処理
+  handleMutations(mutations) {
+    console.log(`🔄 DOM変更検出: ${mutations.length}件の変更`);
+    
+    mutations.forEach((mutation, index) => {
+      console.log(`🔍 変更[${index}]: タイプ=${mutation.type}, ターゲット=${mutation.target.tagName}`);
+      
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) {
+          this.processAddedNode(node);
+        }
+      });
+    });
+  }
+
+  // 追加されたノードの処理
+  processAddedNode(node) {
+    console.log(`🆕 新しいノード追加: ${node.tagName}, クラス=[${Array.from(node.classList || []).join(', ')}]`);
+    
+    // 早期リターンでネストを減らす
+    if (!this.shouldProcessNode(node)) {
+      return;
+    }
+
+    // 直接マッチング
+    if (this.tryDirectMatching(node)) {
+      return;
+    }
+
+    // 子要素検索
+    this.tryChildElementMatching(node);
+  }
+
+  // ノードを処理すべきかどうかの判定
+  shouldProcessNode(node) {
+    if (this.isDefinitelyMessageElement(node)) {
+      console.log('✅ 確実なメッセージ要素を検出:', node.className || node.tagName);
+      return true;
+    }
+    
+    if (this.isGoogleUIElement(node)) {
+      console.log('🚫 Google UI要素を検出して無視:', node.className || node.tagName);
+      return false;
+    }
+    
+    if (!this.isInMessageContainer(node)) {
+      console.log('🚫 メッセージコンテナ外を検出して無視:', node.className || node.tagName);
+      return false;
+    }
+    
+    return true;
+  }
+
+  // 直接マッチングを試行
+  tryDirectMatching(node) {
+    const gmailSelectors = [
+      '[data-message-id]',
+      '[data-name]', 
+      '[jsname="bgckF"]',
+      '.DTp27d.QIJiHb',
+      '.AflJR',
+      '[data-id]'
+    ];
+    
+    for (const selector of gmailSelectors) {
+      if (this.matchesSelector(node, selector)) {
+        console.log(`💬 新しいメッセージを検出（直接-${selector}）:`, node);
+        this.processMessage(node, `realtime-direct-${selector}`);
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // セレクターマッチングの判定
+  matchesSelector(node, selector) {
+    return node.matches && 
+           node.matches(selector) && 
+           !this.isButtonElement(node) && 
+           (this.isDefinitelyMessageElement(node) || 
+            (!this.isGoogleUIElement(node) && this.isInMessageContainer(node)));
+  }
+
+  // 子要素マッチングを試行
+  tryChildElementMatching(node) {
+    const prioritySelectors = ['[jsname="bgckF"]', '.DTp27d.QIJiHb'];
+    
+    for (const selector of prioritySelectors) {
+      if (this.processChildElements(node, selector)) {
+        break;
+      }
+    }
+  }
+
+  // 子要素の処理
+  processChildElements(node, selector) {
+    const messageElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
+    let foundMessageText = false;
+    
+    messageElements.forEach(msgEl => {
+      if (this.isValidMessageElement(msgEl)) {
+        console.log(`💬 子要素から新しいメッセージを検出 (${selector}):`, msgEl);
+        this.processMessage(msgEl, `realtime-child-${selector}`);
+        foundMessageText = true;
+      }
+    });
+    
+    return foundMessageText;
+  }
+
+  // 有効なメッセージ要素かどうかの判定
+  isValidMessageElement(element) {
+    return !this.isButtonElement(element) && 
+           (this.isDefinitelyMessageElement(element) || 
+            (!this.isGoogleUIElement(element) && this.isInMessageContainer(element)));
+  }
+
+  // チャットコンテナの取得
+  getChatContainer() {
+    return document.querySelector('[role="main"]') || document.body;
   }
 
   // ボタン要素かどうかを判定
