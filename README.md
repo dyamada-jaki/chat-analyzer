@@ -6,6 +6,9 @@
 ![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.15.0-brightgreen)
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue)
 
+## 🤖 AI開発者向け重要情報
+- **[開発ルール](DEVELOPMENT_RULES.md)**: 必須作業・コミットルール・chat.log更新ルール
+
 ## 📊 ドキュメント
 
 - **[ユースケース図](docs/USECASE_DIAGRAMS.md)**: Mermaid形式のシステム設計図・フロー図
