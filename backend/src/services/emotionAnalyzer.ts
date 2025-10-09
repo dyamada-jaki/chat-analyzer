@@ -17,7 +17,7 @@ export class EmotionAnalyzer {
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     
     // クォータ追跡の初期化
     this.quotaTracker = {
@@ -83,9 +83,15 @@ confidence: [0.0-1.0の数値]
 簡潔に分析結果のみを出力してください。
 `;
 
+      // デバッグ用：送信するプロンプトをログ出力
+      console.log('📝 Gemini APIプロンプト:', prompt);
+
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
+
+      // デバッグ用：Gemini APIの生レスポンスをログ出力
+      console.log('🤖 Gemini API生レスポンス:', text);
 
       // 成功時のクォータ更新
       this.updateQuotaCount();

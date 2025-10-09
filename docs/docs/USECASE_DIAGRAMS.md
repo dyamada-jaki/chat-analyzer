@@ -22,6 +22,7 @@ graph TB
         UC2[UC-002: 既存メッセージ一括処理]
         UC3[UC-003: 統計情報確認]
         UC4[UC-004: APIクォータ制御]
+        UC5[UC-005: Gemini APIデバッグログ]
         TC1[TC-001: 拡張機能インストール]
         TC2[TC-002: サーバーセットアップ]
     end
@@ -30,6 +31,7 @@ graph TB
     TL --> UC2
     PM --> UC3
     SA --> UC4
+    SA --> UC5
     SA --> TC1
     SA --> TC2
     
@@ -37,6 +39,7 @@ graph TB
     UC2 --> CE
     UC3 --> CE
     UC4 --> BE
+    UC5 --> BE
     CE --> BE
     BE --> AI
 ```
@@ -149,4 +152,23 @@ stateDiagram-v2
     一括処理中 --> 待機中 : 処理完了
     待機中 --> エラー状態 : API エラー
     エラー状態 --> 待機中 : エラー回復
+```
+
+### UC-005: Gemini APIデバッグログフロー
+
+```mermaid
+flowchart TD
+    A[感情分析リクエスト] --> B[プロンプト生成]
+    B --> C[プロンプトログ出力]
+    C --> D[Gemini API呼び出し]
+    D --> E[レスポンス受信]
+    E --> F[レスポンスログ出力]
+    F --> G[パース処理]
+    G --> H[分析結果返却]
+    H --> I[デバッグ情報保存]
+    I --> J[開発者確認可能]
+    
+    style C fill:#e1f5fe
+    style F fill:#e8f5e8
+    style I fill:#fff3e0
 ```
