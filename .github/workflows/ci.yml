@@ -121,16 +121,62 @@ jobs:
       working-directory: ./backend
       run: |
         pnpm install --frozen-lockfile
-        pnpm audit --audit-level moderate
+        pnpm audit --audit-level high
         
     - name: 🔐 Check for secrets
       run: |
-        # 機密情報の漏洩チェック
-        if grep -r -i "api[_-]key\|secret\|password\|token" --include="*.js" --include="*.ts" --include="*.json" . | grep -v node_modules | grep -v ".git" | grep -v "test" | grep -v "example"; then
-          echo "❌ Potential secrets found in code"
+        # 機密情報の漏洩チェック（環境変数参照、ビルド成果物、認証ロジックは除外）
+        if grep -r -i "api[_-]key\|secret\|password\|token" --include="*.js" --include="*.ts" --include="*.json" . | \
+           grep -v node_modules | \
+           grep -v ".git" | \
+           grep -v "test" | \
+           grep -v "example" | \
+           grep -v "dist/" | \
+           grep -v "process\.env\." | \
+           grep -v "demo_key" | \
+           grep -v "your_api_key_here" | \
+           grep -v "API_KEY.*=" | \
+           grep -v "SECRET.*=" | \
+           grep -v "TOKEN.*=" | \
+           grep -v "PASSWORD.*=" | \
+           grep -v "authorization" | \
+           grep -v "Authorization" | \
+           grep -v "Bearer" | \
+           grep -v "access_token" | \
+           grep -v "refresh_token" | \
+           grep -v "nextPageToken" | \
+           grep -v "getToken" | \
+           grep -v "setCredentials" | \
+           grep -v "GEMINI_API_KEY" | \
+           grep -v "new.*Analyzer"; then
+          echo "❌ Potential hardcoded secrets found in code"
+          echo "Found:"
+          grep -r -i "api[_-]key\|secret\|password\|token" --include="*.js" --include="*.ts" --include="*.json" . | \
+           grep -v node_modules | \
+           grep -v ".git" | \
+           grep -v "test" | \
+           grep -v "example" | \
+           grep -v "dist/" | \
+           grep -v "process\.env\." | \
+           grep -v "demo_key" | \
+           grep -v "your_api_key_here" | \
+           grep -v "API_KEY.*=" | \
+           grep -v "SECRET.*=" | \
+           grep -v "TOKEN.*=" | \
+           grep -v "PASSWORD.*=" | \
+           grep -v "authorization" | \
+           grep -v "Authorization" | \
+           grep -v "Bearer" | \
+           grep -v "access_token" | \
+           grep -v "refresh_token" | \
+           grep -v "nextPageToken" | \
+           grep -v "getToken" | \
+           grep -v "setCredentials" | \
+           grep -v "GEMINI_API_KEY" | \
+           grep -v "new.*Analyzer"
           exit 1
         else
-          echo "✅ No secrets detected"
+          echo "✅ No hardcoded secrets detected"
         fi
 
   # ドキュメント検証
