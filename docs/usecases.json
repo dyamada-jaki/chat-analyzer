@@ -1,0 +1,206 @@
+{
+  "project": "Chat Analyzer",
+  "version": "1.0.0",
+  "lastUpdated": "2025-10-09",
+  "usecases": [
+    {
+      "id": "UC-001",
+      "title": "リアルタイム感情分析",
+      "priority": "high",
+      "status": "implemented",
+      "category": "core-feature",
+      "userStory": {
+        "asA": "チームメンバー",
+        "iWantTo": "投稿されたメッセージの感情を自動で分析してもらいたい",
+        "soThat": "チーム内の雰囲気やコミュニケーションの質をリアルタイムで把握できる"
+      },
+      "acceptanceCriteria": [
+        "新しいメッセージが投稿されると3秒以内に感情分析が完了する",
+        "感情アイコンがメッセージの横に表示される",
+        "Gemini APIエラー時はフォールバック分析が動作する",
+        "分析結果がバックエンドに保存される"
+      ],
+      "preconditions": [
+        "Chrome拡張機能がインストール済み",
+        "Google Chatページを開いている",
+        "バックエンドサーバーが起動中"
+      ],
+      "mainFlow": [
+        "ユーザーがメッセージを投稿",
+        "拡張機能がDOMの変更を検知",
+        "メッセージテキストを抽出",
+        "バックエンドAPIに分析リクエスト送信",
+        "Gemini AIで感情分析実行",
+        "分析結果を返却",
+        "感情アイコンをDOMに挿入"
+      ],
+      "expectedResults": [
+        "適切な感情アイコンが表示される",
+        "アイコンにホバーで詳細表示"
+      ],
+      "exceptionFlows": [
+        {
+          "condition": "Gemini APIエラー",
+          "action": "シンプルなキーワードベース分析にフォールバック"
+        },
+        {
+          "condition": "ネットワークエラー",
+          "action": "ローカルでの基本分析を実行"
+        }
+      ],
+      "testCases": [
+        {
+          "type": "normal",
+          "description": "各感情タイプのメッセージで正しいアイコンが表示される"
+        },
+        {
+          "type": "error",
+          "description": "APIエラー時にフォールバック分析が動作する"
+        }
+      ],
+      "metrics": {
+        "accuracy": "80%以上の感情分析精度",
+        "performance": "平均2秒以内",
+        "reliability": "エラー率5%未満"
+      },
+      "relatedFiles": [
+        "chrome-extension/content.js",
+        "chrome-extension/content.css",
+        "backend/src/routes/webhook.ts",
+        "backend/src/services/emotionAnalyzer.ts"
+      ]
+    },
+    {
+      "id": "UC-002",
+      "title": "既存メッセージ一括処理",
+      "priority": "medium",
+      "status": "implemented",
+      "category": "batch-processing",
+      "userStory": {
+        "asA": "チームリーダー",
+        "iWantTo": "過去のメッセージも感情分析したい",
+        "soThat": "チーム内の感情の変遷を把握できる"
+      },
+      "acceptanceCriteria": [
+        "ワンクリックで画面上の全メッセージを処理できる",
+        "処理中の進捗が表示される",
+        "処理完了後に結果が一覧表示される"
+      ],
+      "preconditions": [
+        "拡張機能のポップアップを開く",
+        "Google Chatでメッセージが表示されている"
+      ],
+      "mainFlow": [
+        "「既存メッセージ再処理」ボタンをクリック",
+        "画面上の全メッセージを検出",
+        "各メッセージを順次分析",
+        "感情アイコンを表示"
+      ],
+      "expectedResults": [
+        "画面上のすべてのメッセージに感情アイコンが表示される"
+      ],
+      "metrics": {
+        "performance": "100メッセージを30秒以内で処理",
+        "accuracy": "リアルタイム分析と同等の精度"
+      },
+      "relatedFiles": [
+        "chrome-extension/popup.js",
+        "chrome-extension/content.js"
+      ]
+    },
+    {
+      "id": "UC-003",
+      "title": "統計情報確認",
+      "priority": "low",
+      "status": "implemented",
+      "category": "analytics",
+      "userStory": {
+        "asA": "プロジェクトマネージャー",
+        "iWantTo": "チーム全体の感情統計を確認したい",
+        "soThat": "チームの健康状態を定量的に把握できる"
+      },
+      "acceptanceCriteria": [
+        "メッセージ数の統計が表示される",
+        "感情別の分布が表示される",
+        "データの更新が可能"
+      ],
+      "preconditions": [
+        "拡張機能のポップアップを開く",
+        "過去に分析データが蓄積されている"
+      ],
+      "mainFlow": [
+        "「更新」ボタンをクリック",
+        "バックエンドから統計データを取得",
+        "ポップアップに統計情報を表示"
+      ],
+      "expectedResults": [
+        "メッセージ数、感情別の分布などが表示される"
+      ],
+      "metrics": {
+        "performance": "統計取得は1秒以内",
+        "accuracy": "リアルタイムデータと整合性"
+      },
+      "relatedFiles": [
+        "chrome-extension/popup.js",
+        "backend/src/routes/webhook.ts"
+      ]
+    }
+  ],
+  "technicalUsecases": [
+    {
+      "id": "TC-001",
+      "title": "Chrome拡張機能インストール",
+      "category": "installation",
+      "status": "documented",
+      "steps": [
+        "chrome://extensions/ を開く",
+        "開発者モードを有効化",
+        "拡張機能フォルダを読み込み"
+      ],
+      "expectedResults": [
+        "拡張機能が正常にインストールされる",
+        "Google Chatページで感情分析が動作する"
+      ]
+    },
+    {
+      "id": "TC-002",
+      "title": "バックエンドサーバーセットアップ",
+      "category": "deployment",
+      "status": "documented",
+      "prerequisites": [
+        "Node.js 18.x以上",
+        "Gemini APIキー"
+      ],
+      "steps": [
+        "リポジトリをクローン",
+        "backend/ ディレクトリで pnpm install",
+        ".env ファイルにAPIキーを設定",
+        "pnpm dev でサーバー起動"
+      ],
+      "expectedResults": [
+        "サーバーが http://localhost:3001 で起動",
+        "感情分析APIが利用可能になる"
+      ]
+    }
+  ],
+  "futureUsecases": [
+    {
+      "id": "UC-006",
+      "title": "感情トレンドのグラフ表示",
+      "priority": "medium",
+      "status": "planned"
+    },
+    {
+      "id": "UC-007",
+      "title": "チームメンバー別の感情分析",
+      "priority": "low",
+      "status": "planned"
+    },
+    {
+      "id": "UC-008",
+      "title": "アラート機能",
+      "priority": "high",
+      "status": "planned"
+    }
+  ]
+}
